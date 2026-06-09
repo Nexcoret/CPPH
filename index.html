@@ -33,7 +33,27 @@
   <style>
     .fade-in { animation: fadeIn 0.4s ease-in-out; }
     @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-    body { background-color: #f3f4f6; font-family: 'Inter', sans-serif; }
+    
+    body { 
+        position: relative; 
+        font-family: 'Inter', sans-serif; 
+        background-color: #f3f4f6;
+    }
+
+    body:before {
+      content: "";
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 0;
+      background-image: url('https://res.cloudinary.com/dway4iqeh/image/upload/v1781018129/huach_phhmz5.jpg');
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+      opacity: 0.35;
+    }
   </style>
 </head>
 
@@ -75,7 +95,7 @@
     </div>
   </div>
 
-  <footer class="bg-huachipato-dark text-white text-center py-4 text-sm mt-auto">
+  <footer class="bg-huachipato-dark text-white text-center py-4 text-sm mt-auto relative z-10">
     <p>&copy; 2026 Compañía Siderúrgica Huachipato. Todos los derechos reservados.</p>
   </footer>
 
@@ -89,9 +109,9 @@
         // =========================================================================
 
         const quizData = [
-            { id: 1, question: "¿Cuál es el EPP básico y obligatorio para transitar por la planta?", options: ["Solo casco y lentes.", "Casco, lentes, zapatos de seguridad, chaleco y protección auditiva.", "Ropa estándar.", "Guantes y mascarilla."], correctAnswer: 1 },
-            { id: 2, question: "En caso de sirena de emergencia general, usted debe:", options: ["Buscar al supervisor.", "Terminar su labor.", "Ir a la Zona de Seguridad más cercana.", "Evacuar en su vehículo."], correctAnswer: 2 },
-            { id: 3, question: "¿Velocidad máxima permitida para vehículos livianos?", options: ["20 km/h", "30 km/h", "40 km/h", "50 km/h"], correctAnswer: 1 },
+            { id: 1, question: "¿Cuál es el EPP básico y obligatorio a utilizar en planta?", options: ["Casco de seguridad sin barbiquejo, lentes de seguridad, protección auditiva, zapatos de seguridad, guantes, chaleco reflectante", "Casco de seguridad con barbiquejo, lentes de sol, protección auditiva, zapatos de seguridad, guantes, chaleco reflectante", "Casco de seguridad con barbiquejo, lentes de seguridad, protección auditiva, zapatos de seguridad, guantes, chaleco reflectante", "Casco de seguridad con barbiquejo, lentes de seguridad, protección auditiva, zapatillas de seguridad, guantes, chaleco reflectante"], correctAnswer: 3 },
+            { id: 2, question: "¿Qué tipo de equipo / aparejos se utiliza comúnmente para la carga suspendida? ", options: ["Grúas", "Huinches - Tecles", "Cadenas y cables", "Todas las anteriores"], correctAnswer: 4 },
+            { id: 3, question: "¿Cuál es el principal riesgo asociado con la carga suspendida?", options: ["Caída de la carga", "Atmósfera deficiente", "Caída de personas a distinto nivel", "Todas las anteriores"], correctAnswer: 1 },
             { id: 4, question: "Al cruzar vías férreas es obligatorio:", options: ["Cruzar rápido.", "Pare, Mire y Escuche en pasos habilitados.", "Avisar por radio.", "Cruzar por cualquier lugar."], correctAnswer: 1 },
             { id: 5, question: "Política de alcohol y drogas:", options: ["Permitido moderado.", "Solo prohibidas drogas ilícitas.", "Tolerancia Cero.", "Solo prohibido para maquinaria pesada."], correctAnswer: 2 },
             { id: 6, question: "Antes de intervenir equipo eléctrico/mecánico:", options: ["Avisar a compañeros.", "Aplicar Bloqueo de Energías (LOTOTO).", "Desenchufar rápido.", "Poner letrero de cuidado."], correctAnswer: 1 },
@@ -130,7 +150,7 @@
 
         function renderLogin() {
             document.getElementById('app-container').innerHTML = `
-                <div class="w-full max-w-md bg-white rounded-xl shadow-xl p-8 fade-in">
+                <div class="w-full max-w-md bg-white rounded-xl shadow-xl p-8 fade-in relative z-10">
                     <h2 class="text-2xl font-bold text-huachipato-dark mb-6 text-center">Ingreso a Inducción</h2>
                     <div class="space-y-4">
                         <input type="text" id="input-name" placeholder="Nombre Completo" class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-huachipato-blue outline-none">
@@ -155,7 +175,7 @@
 
         function renderVideo() {
             document.getElementById('app-container').innerHTML = `
-                <div class="w-full max-w-4xl bg-white rounded-xl shadow-xl p-6 fade-in text-center">
+                <div class="w-full max-w-4xl bg-white rounded-xl shadow-xl p-6 fade-in text-center relative z-10">
                     <h2 class="text-2xl font-bold text-huachipato-dark mb-4">Capacitación de Seguridad</h2>
                     <div class="aspect-video bg-black rounded-lg overflow-hidden mb-6 flex items-center justify-center">
                         <video id="induction-video" class="w-full h-full object-contain" controls>
@@ -169,7 +189,7 @@
         function renderQuiz() {
             const q = quizData[AppState.currentQuestionIndex];
             document.getElementById('app-container').innerHTML = `
-                <div class="w-full max-w-2xl bg-white rounded-xl shadow-xl p-8 fade-in">
+                <div class="w-full max-w-2xl bg-white rounded-xl shadow-xl p-8 fade-in relative z-10">
                     <div class="w-full bg-gray-200 h-2 rounded-full mb-6">
                         <div class="bg-huachipato-blue h-2 rounded-full transition-all" style="width: ${(AppState.currentQuestionIndex + 1) * 10}%"></div>
                     </div>
@@ -203,7 +223,7 @@
 
         function renderSignature() {
             document.getElementById('app-container').innerHTML = `
-                <div class="w-full max-w-md bg-white rounded-xl shadow-xl p-8 fade-in text-center">
+                <div class="w-full max-w-md bg-white rounded-xl shadow-xl p-8 fade-in text-center relative z-10">
                     <h2 class="text-2xl font-bold text-huachipato-dark mb-2">Firma Digital del Registro</h2>
                     <p class="text-sm text-gray-500 mb-6">Por favor, dibuje su firma en el recuadro inferior para finalizar formalmente su acreditación.</p>
                     <div class="border-2 border-dashed border-gray-300 rounded-lg overflow-hidden bg-gray-50 relative">
@@ -249,7 +269,7 @@
             AppState.score = correct * 10;
             const passed = AppState.score >= 80;
 
-            document.getElementById('app-container').innerHTML = `<div class="text-center"><p class="animate-pulse font-bold text-huachipato-blue">Sincronizando registro con Google Sheets y descargando copia PDF...</p></div>`;
+            document.getElementById('app-container').innerHTML = `<div class="text-center relative z-10"><p class="animate-pulse font-bold text-huachipato-blue">Sincronizando registro con Google Sheets y descargando copia PDF...</p></div>`;
 
             const detalleFormulario = quizData.map((q, i) => {
                 return {
@@ -259,7 +279,6 @@
                 };
             });
 
-            // Generar PDF
             const { jsPDF } = window.jspdf;
             const doc = new jsPDF();
             doc.setFillColor(0, 51, 160); doc.rect(0, 0, 210, 40, 'F');
@@ -281,12 +300,11 @@
             const pdfBase64 = doc.output('datauristring');
             doc.save(`Acreditacion_${AppState.user.rut.replace(/[^0-9kK]/g, '')}.pdf`);
 
-            // ENVÍO DE DATOS A GOOGLE SHEETS
-            if (GOOGLE_SCRIPT_URL !== "TU_URL_DE_GOOGLE_APPS_SCRIPT_AQUI") {
+            if (GOOGLE_SCRIPT_URL !== "TUhttps://script.google.com/macros/s/AKfycbwwTshxwKhg4s8a0ACTTxJQFC7xQIZKLmbvb995T_X3xFr8r4QNwKGqIsiHFj7GMSvpFg/exec") {
                 try {
                     await fetch(GOOGLE_SCRIPT_URL, {
                         method: 'POST',
-                        mode: 'no-cors', // Evita problemas de políticas CORS cruzadas con Google
+                        mode: 'no-cors', 
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
                             fecha: new Date().toLocaleString(),
@@ -311,7 +329,7 @@
 
         function renderResults(passed) {
             document.getElementById('app-container').innerHTML = `
-                <div class="w-full max-w-md bg-white rounded-xl shadow-xl p-8 text-center border-t-8 ${passed ? 'border-green-500' : 'border-huachipato-red'} fade-in">
+                <div class="w-full max-w-md bg-white rounded-xl shadow-xl p-8 text-center border-t-8 ${passed ? 'border-green-500' : 'border-huachipato-red'} fade-in relative z-10">
                     <h2 class="text-3xl font-bold mb-4">${passed ? '¡Acreditado!' : 'No Acreditado'}</h2>
                     <p class="text-xl mb-4">Puntaje Obtenido: <span class="font-bold">${AppState.score}%</span></p>
                     <p class="text-sm text-gray-500 mb-8">La inducción ha concluido. El registro se procesó en la base de datos central de Google Sheets.</p>
@@ -319,7 +337,6 @@
                 </div>`;
         }
 
-        // ================= VISTAS DE ADMINISTRACIÓN CONECTADAS A GOOGLE SHEETS =================
         function showAdminLoginModal() { document.getElementById('admin-modal').classList.remove('hidden'); }
         function closeAdminModal() { document.getElementById('admin-modal').classList.add('hidden'); }
 
@@ -333,9 +350,9 @@
                 document.getElementById('btn-admin-view').classList.add('hidden');
                 document.getElementById('btn-logout-view').classList.remove('hidden');
                 
-                document.getElementById('app-container').innerHTML = `<div class="text-center"><p class="text-huachipato-blue font-bold animate-pulse">Descargando registros en tiempo real desde Google Sheets...</p></div>`;
+                document.getElementById('app-container').innerHTML = `<div class="text-center relative z-10"><p class="text-huachipato-blue font-bold animate-pulse">Descargando registros en tiempo real...</p></div>`;
                 
-                if (GOOGLE_SCRIPT_URL !== "TU_URL_DE_GOOGLE_APPS_SCRIPT_AQUI") {
+                if (GOOGLE_SCRIPT_URL !== "Thttps://script.google.com/macros/s/AKfycbwwTshxwKhg4s8a0ACTTxJQFC7xQIZKLmbvb995T_X3xFr8r4QNwKGqIsiHFj7GMSvpFg/exec") {
                     try {
                         const response = await fetch(GOOGLE_SCRIPT_URL);
                         const result = await response.json();
@@ -346,6 +363,7 @@
                         showToast("Error al leer desde la API de Google Sheets.");
                     }
                 }
+                // Al cargar por primera vez, enviamos el arreglo completo y limpio de filtros
                 renderAdminPanel(AppState.cachedRecords);
             } else {
                 alert("Usuario o contraseña incorrectos.");
@@ -359,13 +377,33 @@
             renderLogin();
         }
 
+        // Esta función gestiona el filtrado por RUT en tiempo real y mantiene el orden inverso
+        window.filterRecordsByRut = function() {
+            const query = document.getElementById('search-rut').value.toLowerCase().replace(/[^0-9kK]/g, '');
+            
+            // Creamos una copia invertida del estado original para mantener siempre el más nuevo primero
+            const invertedRecords = [...AppState.cachedRecords].reverse();
+            
+            // Si hay texto en el input, filtramos sobre la lista ya invertida
+            const filtered = invertedRecords.filter(item => {
+                const cleanRut = item.rut.toLowerCase().replace(/[^0-9kK]/g, '');
+                return cleanRut.includes(query);
+            });
+            
+            renderTableRows(filtered);
+        };
+
+        // Renderiza el esqueleto principal del panel y el buscador
         function renderAdminPanel(rows) {
             document.getElementById('app-container').innerHTML = `
-                <div class="w-full max-w-6xl bg-white rounded-xl shadow-xl p-6 fade-in">
-                    <div class="flex justify-between items-center mb-6 border-b pb-4">
+                <div class="w-full max-w-6xl bg-white rounded-xl shadow-xl p-6 fade-in relative z-10">
+                    <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 border-b pb-4 gap-4">
                         <div>
-                            <h2 class="text-2xl font-bold text-huachipato-dark">Panel de Control - Google Sheets Cloud</h2>
+                            <h2 class="text-2xl font-bold text-huachipato-dark">Panel de Control - Cloud</h2>
                             <p class="text-xs text-gray-500">Sincronizado directamente con tu planilla en línea</p>
+                        </div>
+                        <div class="w-full md:w-72">
+                            <input type="text" id="search-rut" oninput="filterRecordsByRut()" placeholder="Buscar por RUT (ej: 12.345.678-9)" class="w-full p-2.5 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-huachipato-blue" />
                         </div>
                     </div>
                     
@@ -381,29 +419,49 @@
                                     <th class="p-3 font-semibold text-center">Acciones</th>
                                 </tr>
                             </thead>
-                            <tbody>
-                                ${rows.length === 0 ? '<tr><td colspan="6" class="p-4 text-center text-gray-400">No se detectan filas completadas en el Sheet.</td></tr>' : ''}
-                                ${rows.map((item, idx) => `
-                                    <tr class="border-b hover:bg-gray-50 transition">
-                                        <td class="p-3 whitespace-nowrap">${item.fecha}</td>
-                                        <td class="p-3 font-medium text-gray-900">${item.nombre}</td>
-                                        <td class="p-3">${item.rut}</td>
-                                        <td class="p-3 text-center font-bold">${item.score}%</td>
-                                        <td class="p-3 text-center">
-                                            <span class="px-2 py-1 rounded-full text-xs font-bold ${item.estado === 'APROBADO' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}">
-                                                ${item.estado}
-                                            </span>
-                                        </td>
-                                        <td class="p-3 flex justify-center gap-2">
-                                            <button onclick="verDetalleCloud(${idx})" class="bg-gray-200 text-gray-700 px-3 py-1 rounded text-xs font-medium hover:bg-gray-300">Ver Formulario</button>
-                                            <button onclick="descargarPdfCloud(${idx})" class="bg-huachipato-blue text-white px-3 py-1 rounded text-xs font-medium hover:bg-huachipato-dark">Recuperar PDF</button>
-                                        </td>
-                                    </tr>
-                                `).join('')}
-                            </tbody>
+                            <tbody id="admin-table-body">
+                                </tbody>
                         </table>
                     </div>
                 </div>`;
+            
+            // Al inicializar el panel, llamamos al filtro (que por defecto tomará todo al estar vacío el input y lo invertirá)
+            filterRecordsByRut();
+        }
+
+        // Renderiza únicamente el cuerpo de la tabla (optimiza la reactividad al escribir en el filtro)
+        function renderTableRows(rows) {
+            const tbody = document.getElementById('admin-table-body');
+            if(!tbody) return;
+
+            if(rows.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" class="p-4 text-center text-gray-400">No se detectan filas que coincidan con la búsqueda.</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = rows.map((item) => {
+                // Buscamos el índice real correspondiente en la base de datos original (AppState.cachedRecords)
+                // Esto asegura que los botones "Ver Formulario" y "Recuperar PDF" abran el registro correcto.
+                const originalIdx = AppState.cachedRecords.findIndex(r => r === item);
+
+                return `
+                    <tr class="border-b hover:bg-gray-50 transition">
+                        <td class="p-3 whitespace-nowrap">${item.fecha}</td>
+                        <td class="p-3 font-medium text-gray-900">${item.nombre}</td>
+                        <td class="p-3">${item.rut}</td>
+                        <td class="p-3 text-center font-bold">${item.score}</td>
+                        <td class="p-3 text-center">
+                            <span class="px-2 py-1 rounded-full text-xs font-bold ${item.estado === 'APROBADO' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}">
+                                ${item.estado}
+                            </span>
+                        </td>
+                        <td class="p-3 flex justify-center gap-2">
+                            <button onclick="verDetalleCloud(${originalIdx})" class="bg-gray-200 text-gray-700 px-3 py-1 rounded text-xs font-medium hover:bg-gray-300">Ver Formulario</button>
+                            <button onclick="descargarPdfCloud(${originalIdx})" class="bg-huachipato-blue text-white px-3 py-1 rounded text-xs font-medium hover:bg-huachipato-dark">Recuperar PDF</button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
         }
 
         window.verDetalleCloud = function(index) {
