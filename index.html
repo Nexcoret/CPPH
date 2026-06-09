@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Acreditación de Ingreso - Planta Huachipato</title>
+  
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
+
+  <script>
+    tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Inter', 'sans-serif'] },
+                    colors: {
+                        huachipato: {
+                            blue: '#0033a0',
+                            dark: '#001b5e',
+                            red: '#e3000f',
+                            gray: '#f3f4f6',
+                            text: '#374151'
+                        }
+                    }
+                }
+            }
+        }
+  </script>
+  <style>
+    .fade-in { animation: fadeIn 0.4s ease-in-out; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    body { background-color: #f3f4f6; font-family: 'Inter', sans-serif; }
+  </style>
+</head>
+
+<body class="text-huachipato-text min-h-screen flex flex-col">
+
+  <header class="bg-white shadow-md border-b-4 border-huachipato-red sticky top-0 z-50">
+    <div class="max-w-7xl mx-auto px-4 h-20 flex items-center justify-between">
+      <div class="flex items-center gap-4">
+        <img src="https://res.cloudinary.com/dway4iqeh/image/upload/v1773364564/OIP_ngwuax.jpg" alt="Logo Huachipato" class="h-12 object-contain">
+        <h1 class="hidden sm:block text-xl font-bold text-huachipato-dark">Plataforma de Acreditación</h1>
+      </div>
+      <div class="flex items-center gap-3">
+        <div id="user-badge" class="hidden flex items-center gap-2 bg-gray-100 px-3 py-1.5 rounded-full border">
+          <span id="badge-name" class="text-sm font-semibold text-gray-700"></span>
+        </div>
+        <button id="btn-admin-view" onclick="showAdminLoginModal()" class="bg-gray-800 text-white text-xs font-bold px-3 py-2 rounded hover:bg-black transition">
+          Admin de Sistema
+        </button>
+        <button id="btn-logout-view" onclick="logoutAdmin()" class="hidden bg-huachipato-red text-white text-xs font-bold px-3 py-2 rounded hover:bg-red-700 transition">
+          Salir Admin
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main class="flex-grow flex items-center justify-center p-4 sm:p-6" id="app-container"></main>
+
+  <div id="admin-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-50">
+    <div class="bg-white p-6 rounded-xl shadow-2xl w-full max-w-sm fade-in">
+        <h3 class="text-lg font-bold text-huachipato-dark mb-4 border-b pb-2">Acceso Administrativo</h3>
+        <div class="space-y-3">
+            <input type="text" id="admin-user" placeholder="Usuario" class="w-full p-2 border rounded outline-none focus:ring-2 focus:ring-huachipato-blue">
+            <input type="password" id="admin-pass" placeholder="Contraseña" class="w-full p-2 border rounded outline-none focus:ring-2 focus:ring-huachipato-blue">
+        </div>
+        <div class="mt-5 flex gap-2 justify-end">
+            <button onclick="closeAdminModal()" class="px-4 py-2 text-sm text-gray-500 hover:underline">Cancelar</button>
+            <button onclick="loginAdmin()" class="bg-huachipato-blue text-white px-4 py-2 rounded text-sm font-bold hover:bg-huachipato-dark">Ingresar</button>
+        </div>
+    </div>
+  </div>
+
+  <footer class="bg-huachipato-dark text-white text-center py-4 text-sm mt-auto">
+    <p>&copy; 2026 Compañía Siderúrgica Huachipato. Todos los derechos reservados.</p>
+  </footer>
+
+  <div id="toast" class="fixed bottom-4 right-4 bg-gray-800 text-white px-6 py-3 rounded-lg shadow-lg transform translate-y-20 opacity-0 transition-all duration-300 z-50">
+    <span id="toast-msg"></span>
+  </div>
+
+  <script>
+        // ================= CONFIGURACIÓN DE TU BASE DE DATOS CLOUD =================
+        const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwwTshxwKhg4s8a0ACTTxJQFC7xQIZKLmbvb995T_X3xFr8r4QNwKGqIsiHFj7GMSvpFg/exec";
+        // =========================================================================
+
+        const quizData = [
+            { id: 1, question: "¿Cuál es el EPP básico y obligatorio para transitar por la planta?", options: ["Solo casco y lentes.", "Casco, lentes, zapatos de seguridad, chaleco y protección auditiva.", "Ropa estándar.", "Guantes y mascarilla."], correctAnswer: 1 },
+            { id: 2, question: "En caso de sirena de emergencia general, usted debe:", options: ["Buscar al supervisor.", "Terminar su labor.", "Ir a la Zona de Seguridad más cercana.", "Evacuar en su vehículo."], correctAnswer: 2 },
+            { id: 3, question: "¿Velocidad máxima permitida para vehículos livianos?", options: ["20 km/h", "30 km/h", "40 km/h", "50 km/h"], correctAnswer: 1 },
+            { id: 4, question: "Al cruzar vías férreas es obligatorio:", options: ["Cruzar rápido.", "Pare, Mire y Escuche en pasos habilitados.", "Avisar por radio.", "Cruzar por cualquier lugar."], correctAnswer: 1 },
+            { id: 5, question: "Política de alcohol y drogas:", options: ["Permitido moderado.", "Solo prohibidas drogas ilícitas.", "Tolerancia Cero.", "Solo prohibido para maquinaria pesada."], correctAnswer: 2 },
+            { id: 6, question: "Antes de intervenir equipo eléctrico/mecánico:", options: ["Avisar a compañeros.", "Aplicar Bloqueo de Energías (LOTOTO).", "Desenchufar rápido.", "Poner letrero de cuidado."], correctAnswer: 1 },
+            { id: 7, question: "Si sufre un incidente leve:", options: ["Reportarlo inmediatamente.", "Ir a enfermería al final del turno.", "Resolverlo por su cuenta.", "Esperar si el dolor aumenta."], correctAnswer: 0 },
+            { id: 8, question: "Uso de teléfono celular:", options: ["En cualquier momento.", "Caminando, no conduciendo.", "Solo en zonas seguras o detenido.", "Cerca de grúas."], correctAnswer: 2 },
+            { id: 9, question: "¿Cómo clasificar residuos?", options: ["Todos juntos.", "Solo cartón y plástico.", "Según código de colores establecido.", "Peligrosos en cualquier basurero."], correctAnswer: 2 },
+            { id: 10, question: "Requisito para trabajos en altura (>1.8m):", options: ["Estar acompañado.", "Examen al día, arnés doble cabo y PTS.", "Usar escalera metálica."], correctAnswer: 1 }
+        ];
+
+        let AppState = {
+            user: { nombre: '', rut: '' },
+            currentQuestionIndex: 0,
+            answers: new Array(10).fill(null),
+            score: 0,
+            signatureImage: null,
+            adminMode: false,
+            cachedRecords: []
+        };
+
+        let canvas, ctx, isDrawing = false, lastX = 0, lastY = 0;
+
+        function showToast(msg) {
+            const t = document.getElementById('toast');
+            document.getElementById('toast-msg').textContent = msg;
+            t.classList.remove('translate-y-20', 'opacity-0');
+            setTimeout(() => t.classList.add('translate-y-20', 'opacity-0'), 4000);
+        }
+
+        function formatRut(rut) {
+            let value = rut.replace(/[^\dkK]/g, '');
+            if (value.length < 2) return value;
+            let cuerpo = value.slice(0, -1);
+            let dv = value.slice(-1).toUpperCase();
+            return cuerpo.replace(/\B(?=(\d{3})+(?!\d))/g, ".") + "-" + dv;
+        }
+
+        function renderLogin() {
+            document.getElementById('app-container').innerHTML = `
+                <div class="w-full max-w-md bg-white rounded-xl shadow-xl p-8 fade-in">
+                    <h2 class="text-2xl font-bold text-huachipato-dark mb-6 text-center">Ingreso a Inducción</h2>
+                    <div class="space-y-4">
+                        <input type="text" id="input-name" placeholder="Nombre Completo" class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-huachipato-blue outline-none">
+                        <input type="text" id="input-rut" placeholder="RUT (Ej: 12.345.678-9)" class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-huachipato-blue outline-none" oninput="this.value = formatRut(this.value)">
+                        <button onclick="validateLogin()" class="w-full bg-huachipato-blue text-white font-bold py-3 rounded-lg hover:bg-huachipato-dark transition">Iniciar Inducción</button>
+                    </div>
+                </div>`;
+        }
+
+        window.validateLogin = function() {
+            const n = document.getElementById('input-name').value.trim();
+            const r = document.getElementById('input-rut').value.trim();
+            if(n.length > 5 && r.length >= 8) {
+                AppState.user = { nombre: n, rut: r };
+                document.getElementById('user-badge').classList.remove('hidden');
+                document.getElementById('badge-name').textContent = n.split(' ')[0];
+                renderVideo();
+            } else {
+                showToast("Por favor, ingrese datos válidos");
+            }
+        };
+
+        function renderVideo() {
+            document.getElementById('app-container').innerHTML = `
+                <div class="w-full max-w-4xl bg-white rounded-xl shadow-xl p-6 fade-in text-center">
+                    <h2 class="text-2xl font-bold text-huachipato-dark mb-4">Capacitación de Seguridad</h2>
+                    <div class="aspect-video bg-black rounded-lg overflow-hidden mb-6 flex items-center justify-center">
+                        <video id="induction-video" class="w-full h-full object-contain" controls>
+                            <source src="https://res.cloudinary.com/dway4iqeh/video/upload/v1780344486/videoplayback_ptuxuz.mp4" type="video/mp4">
+                        </video>
+                    </div>
+                    <button id="btn-quiz" onclick="renderQuiz()" class="bg-huachipato-red text-white font-bold py-3 px-10 rounded-lg hover:bg-red-700 transition">Ir al Cuestionario</button>
+                </div>`;
+        }
+
+        function renderQuiz() {
+            const q = quizData[AppState.currentQuestionIndex];
+            document.getElementById('app-container').innerHTML = `
+                <div class="w-full max-w-2xl bg-white rounded-xl shadow-xl p-8 fade-in">
+                    <div class="w-full bg-gray-200 h-2 rounded-full mb-6">
+                        <div class="bg-huachipato-blue h-2 rounded-full transition-all" style="width: ${(AppState.currentQuestionIndex + 1) * 10}%"></div>
+                    </div>
+                    <h3 class="text-xl font-bold mb-6">${AppState.currentQuestionIndex + 1}. ${q.question}</h3>
+                    <div class="space-y-3">
+                        ${q.options.map((opt, i) => `
+                            <button id="opt-${i}" onclick="selectOpt(${i})" class="quiz-option w-full text-left p-4 border-2 rounded-xl transition ${AppState.answers[AppState.currentQuestionIndex] === i ? 'border-huachipato-blue bg-blue-50 font-medium' : 'border-gray-200 hover:bg-gray-50'}">
+                                ${opt}
+                            </button>
+                        `).join('')}
+                    </div>
+                    <div class="mt-8 flex justify-between">
+                        <button onclick="prevQ()" class="text-gray-500 font-bold ${AppState.currentQuestionIndex === 0 ? 'invisible' : ''}">Anterior</button>
+                        <button onclick="nextQ()" class="bg-huachipato-blue text-white px-8 py-3 rounded-lg font-bold hover:bg-huachipato-dark transition">Siguiente</button>
+                    </div>
+                </div>`;
+        }
+
+        window.selectOpt = (i) => { 
+            AppState.answers[AppState.currentQuestionIndex] = i; 
+            document.querySelectorAll('.quiz-option').forEach((btn, index) => {
+                btn.className = index === i ? "quiz-option w-full text-left p-4 border-2 rounded-xl transition border-huachipato-blue bg-blue-50 font-medium" : "quiz-option w-full text-left p-4 border-2 rounded-xl transition border-gray-200 hover:bg-gray-50";
+            });
+        };
+
+        window.prevQ = () => { AppState.currentQuestionIndex--; renderQuiz(); };
+        window.nextQ = () => {
+            if(AppState.answers[AppState.currentQuestionIndex] === null) return showToast("Seleccione una respuesta");
+            if(AppState.currentQuestionIndex < 9) { AppState.currentQuestionIndex++; renderQuiz(); } else { renderSignature(); }
+        };
+
+        function renderSignature() {
+            document.getElementById('app-container').innerHTML = `
+                <div class="w-full max-w-md bg-white rounded-xl shadow-xl p-8 fade-in text-center">
+                    <h2 class="text-2xl font-bold text-huachipato-dark mb-2">Firma Digital del Registro</h2>
+                    <p class="text-sm text-gray-500 mb-6">Por favor, dibuje su firma en el recuadro inferior para finalizar formalmente su acreditación.</p>
+                    <div class="border-2 border-dashed border-gray-300 rounded-lg overflow-hidden bg-gray-50 relative">
+                        <canvas id="signature-canvas" width="400" height="200" class="w-full h-auto block touch-none cursor-crosshair bg-gray-50"></canvas>
+                    </div>
+                    <div class="mt-6 flex gap-4">
+                        <button onclick="clearSignature()" class="w-1/2 bg-gray-200 text-gray-700 font-bold py-3 rounded-lg hover:bg-gray-300 transition">Limpiar</button>
+                        <button onclick="processFinal()" class="w-1/2 bg-huachipato-blue text-white font-bold py-3 rounded-lg hover:bg-huachipato-dark transition">Finalizar</button>
+                    </div>
+                </div>`;
+            initCanvas();
+        }
+
+        function initCanvas() {
+            canvas = document.getElementById('signature-canvas'); if (!canvas) return;
+            ctx = canvas.getContext('2d'); ctx.strokeStyle = '#0033a0'; ctx.lineWidth = 3; ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+            function getPos(e) {
+                const rect = canvas.getBoundingClientRect();
+                const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+                const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+                return { x: (clientX - rect.left) * (canvas.width / rect.width), y: (clientY - rect.top) * (canvas.height / rect.height) };
+            }
+            canvas.addEventListener('mousedown', (e) => { isDrawing = true; const pos = getPos(e); lastX = pos.x; lastY = pos.y; });
+            canvas.addEventListener('mousemove', (e) => {
+                if (!isDrawing) return; e.preventDefault(); const pos = getPos(e);
+                ctx.beginPath(); ctx.moveTo(lastX, lastY); ctx.lineTo(pos.x, pos.y); ctx.stroke(); lastX = pos.x; lastY = pos.y;
+            });
+            window.addEventListener('mouseup', () => isDrawing = false);
+            canvas.addEventListener('touchstart', (e) => { isDrawing = true; const pos = getPos(e); lastX = pos.x; lastY = pos.y; }, { passive: false });
+            canvas.addEventListener('touchmove', (e) => {
+                if (!isDrawing) return; e.preventDefault(); const pos = getPos(e);
+                ctx.beginPath(); ctx.moveTo(lastX, lastY); ctx.lineTo(pos.x, pos.y); ctx.stroke(); lastX = pos.x; lastY = pos.y;
+            }, { passive: false });
+        }
+
+        window.clearSignature = () => { if (ctx && canvas) ctx.clearRect(0, 0, canvas.width, canvas.height); };
+
+        async function processFinal() {
+            if(canvas) { AppState.signatureImage = canvas.toDataURL(); }
+
+            let correct = 0;
+            quizData.forEach((q, i) => { if(AppState.answers[i] === q.correctAnswer) correct++; });
+            AppState.score = correct * 10;
+            const passed = AppState.score >= 80;
+
+            document.getElementById('app-container').innerHTML = `<div class="text-center"><p class="animate-pulse font-bold text-huachipato-blue">Sincronizando registro con Google Sheets y descargando copia PDF...</p></div>`;
+
+            const detalleFormulario = quizData.map((q, i) => {
+                return {
+                    pregunta: q.question,
+                    seleccion: q.options[AppState.answers[i]] || 'Sin Respuesta',
+                    resultado: AppState.answers[i] === q.correctAnswer ? 'CORRECTO' : 'INCORRECTO'
+                };
+            });
+
+            // Generar PDF
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            doc.setFillColor(0, 51, 160); doc.rect(0, 0, 210, 40, 'F');
+            doc.setTextColor(255, 255, 255); doc.setFontSize(18); doc.setFont("helvetica", "bold");
+            doc.text("REGISTRO DE INDUCCIÓN Y ACREDITACIÓN", 105, 25, { align: 'center' });
+            doc.setTextColor(0, 51, 160); doc.setFontSize(13); doc.text("1. DATOS DEL TRABAJADOR", 20, 55);
+            doc.strokeStyle = '#e3000f'; doc.lineWidth = 0.5; doc.line(20, 58, 190, 58);
+            doc.setTextColor(0, 0, 0); doc.setFontSize(11); doc.setFont("helvetica", "normal");
+            doc.text(`Nombre Completo: ${AppState.user.nombre}`, 20, 68);
+            doc.text(`RUT de Identidad: ${AppState.user.rut}`, 20, 76);
+            doc.text(`Fecha y Hora de Emisión: ${new Date().toLocaleString()}`, 20, 84);
+            doc.setFont("helvetica", "bold");
+            if(passed) { doc.setTextColor(0, 128, 0); doc.text(`Puntaje: ${AppState.score}% - APROBADO`, 20, 95); } 
+            else { doc.setTextColor(227, 0, 15); doc.text(`Puntaje: ${AppState.score}% - REPROBADO`, 20, 95); }
+
+            if(AppState.signatureImage) { doc.addImage(AppState.signatureImage, 'PNG', 75, 120, 60, 30); }
+            doc.text(AppState.user.nombre, 105, 160, { align: 'center' });
+
+            const pdfBase64 = doc.output('datauristring');
+            doc.save(`Acreditacion_${AppState.user.rut.replace(/[^0-9kK]/g, '')}.pdf`);
+
+            // ENVÍO DE DATOS A GOOGLE SHEETS
+            if (GOOGLE_SCRIPT_URL !== "TU_URL_DE_GOOGLE_APPS_SCRIPT_AQUI") {
+                try {
+                    await fetch(GOOGLE_SCRIPT_URL, {
+                        method: 'POST',
+                        mode: 'no-cors', // Evita problemas de políticas CORS cruzadas con Google
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            fecha: new Date().toLocaleString(),
+                            nombre: AppState.user.nombre,
+                            rut: AppState.user.rut,
+                            score: AppState.score,
+                            estado: passed ? 'APROBADO' : 'REPROBADO',
+                            respuestas: detalleFormulario,
+                            pdf_base64: pdfBase64
+                        })
+                    });
+                    showToast("¡Guardado exitoso en Google Sheets cloud!");
+                } catch (error) {
+                    showToast("Error de conexión al guardar en la nube.");
+                }
+            } else {
+                console.log("Datos de respaldo locales (Script URL no configurada todavía)");
+            }
+
+            renderResults(passed);
+        }
+
+        function renderResults(passed) {
+            document.getElementById('app-container').innerHTML = `
+                <div class="w-full max-w-md bg-white rounded-xl shadow-xl p-8 text-center border-t-8 ${passed ? 'border-green-500' : 'border-huachipato-red'} fade-in">
+                    <h2 class="text-3xl font-bold mb-4">${passed ? '¡Acreditado!' : 'No Acreditado'}</h2>
+                    <p class="text-xl mb-4">Puntaje Obtenido: <span class="font-bold">${AppState.score}%</span></p>
+                    <p class="text-sm text-gray-500 mb-8">La inducción ha concluido. El registro se procesó en la base de datos central de Google Sheets.</p>
+                    <button onclick="location.reload()" class="w-full bg-huachipato-dark text-white py-3 rounded-lg font-bold hover:bg-huachipato-blue transition">Volver al Inicio</button>
+                </div>`;
+        }
+
+        // ================= VISTAS DE ADMINISTRACIÓN CONECTADAS A GOOGLE SHEETS =================
+        function showAdminLoginModal() { document.getElementById('admin-modal').classList.remove('hidden'); }
+        function closeAdminModal() { document.getElementById('admin-modal').classList.add('hidden'); }
+
+        async function loginAdmin() {
+            const u = document.getElementById('admin-user').value.trim();
+            const p = document.getElementById('admin-pass').value.trim();
+
+            if (u === "adminprh" && p === "prh1234") {
+                AppState.adminMode = true;
+                closeAdminModal();
+                document.getElementById('btn-admin-view').classList.add('hidden');
+                document.getElementById('btn-logout-view').classList.remove('hidden');
+                
+                document.getElementById('app-container').innerHTML = `<div class="text-center"><p class="text-huachipato-blue font-bold animate-pulse">Descargando registros en tiempo real desde Google Sheets...</p></div>`;
+                
+                if (GOOGLE_SCRIPT_URL !== "TU_URL_DE_GOOGLE_APPS_SCRIPT_AQUI") {
+                    try {
+                        const response = await fetch(GOOGLE_SCRIPT_URL);
+                        const result = await response.json();
+                        if(result.status === "success") {
+                            AppState.cachedRecords = result.data;
+                        }
+                    } catch (e) {
+                        showToast("Error al leer desde la API de Google Sheets.");
+                    }
+                }
+                renderAdminPanel(AppState.cachedRecords);
+            } else {
+                alert("Usuario o contraseña incorrectos.");
+            }
+        }
+
+        function logoutAdmin() {
+            AppState.adminMode = false;
+            document.getElementById('btn-admin-view').classList.remove('hidden');
+            document.getElementById('btn-logout-view').classList.add('hidden');
+            renderLogin();
+        }
+
+        function renderAdminPanel(rows) {
+            document.getElementById('app-container').innerHTML = `
+                <div class="w-full max-w-6xl bg-white rounded-xl shadow-xl p-6 fade-in">
+                    <div class="flex justify-between items-center mb-6 border-b pb-4">
+                        <div>
+                            <h2 class="text-2xl font-bold text-huachipato-dark">Panel de Control - Google Sheets Cloud</h2>
+                            <p class="text-xs text-gray-500">Sincronizado directamente con tu planilla en línea</p>
+                        </div>
+                    </div>
+                    
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-sm border-collapse">
+                            <thead>
+                                <tr class="bg-gray-100 border-b">
+                                    <th class="p-3 font-semibold">Fecha</th>
+                                    <th class="p-3 font-semibold">Nombre Completo</th>
+                                    <th class="p-3 font-semibold">RUT</th>
+                                    <th class="p-3 font-semibold text-center">Nota</th>
+                                    <th class="p-3 font-semibold text-center">Estado</th>
+                                    <th class="p-3 font-semibold text-center">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${rows.length === 0 ? '<tr><td colspan="6" class="p-4 text-center text-gray-400">No se detectan filas completadas en el Sheet.</td></tr>' : ''}
+                                ${rows.map((item, idx) => `
+                                    <tr class="border-b hover:bg-gray-50 transition">
+                                        <td class="p-3 whitespace-nowrap">${item.fecha}</td>
+                                        <td class="p-3 font-medium text-gray-900">${item.nombre}</td>
+                                        <td class="p-3">${item.rut}</td>
+                                        <td class="p-3 text-center font-bold">${item.score}%</td>
+                                        <td class="p-3 text-center">
+                                            <span class="px-2 py-1 rounded-full text-xs font-bold ${item.estado === 'APROBADO' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}">
+                                                ${item.estado}
+                                            </span>
+                                        </td>
+                                        <td class="p-3 flex justify-center gap-2">
+                                            <button onclick="verDetalleCloud(${idx})" class="bg-gray-200 text-gray-700 px-3 py-1 rounded text-xs font-medium hover:bg-gray-300">Ver Formulario</button>
+                                            <button onclick="descargarPdfCloud(${idx})" class="bg-huachipato-blue text-white px-3 py-1 rounded text-xs font-medium hover:bg-huachipato-dark">Recuperar PDF</button>
+                                        </td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>`;
+        }
+
+        window.verDetalleCloud = function(index) {
+            const item = AppState.cachedRecords[index];
+            let info = `DETALLE DE FORMULARIO DE: ${item.nombre}\n\n`;
+            item.respuestas.forEach((r, i) => {
+                info += `${i + 1}. ${r.pregunta}\n   Marcó: ${r.seleccion} -> [${r.resultado}]\n\n`;
+            });
+            alert(info);
+        };
+
+        window.descargarPdfCloud = function(index) {
+            const item = AppState.cachedRecords[index];
+            if(item.pdf_base64 && item.pdf_base64.startsWith("data:")) {
+                const link = document.createElement('a');
+                link.href = item.pdf_base64;
+                link.download = `Copia_Acreditacion_${item.rut}.pdf`;
+                link.click();
+            } else {
+                alert("El registro de texto del PDF no está disponible completo en la celda o tiene formato incorrecto.");
+            }
+        };
+
+        window.onload = renderLogin;
+  </script>
+</body>
+</html>
