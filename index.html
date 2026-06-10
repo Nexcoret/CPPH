@@ -11,6 +11,7 @@
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 
   <script>
     tailwind.config = {
@@ -105,24 +106,24 @@
 
   <script>
         // ================= CONFIGURACIÓN DE TU BASE DE DATOS CLOUD =================
-        const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwwTshxwKhg4s8a0ACTTxJQFC7xQIZKLmbvb995T_X3xFr8r4QNwKGqIsiHFj7GMSvpFg/exec";
+        const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzna5nXtPEwH7Nu9Sr8MICnqCUavhK7tna88x3q0GcDQ7pRuRqarPfvB-bxiWLW4YFZiA/exec";
         // =========================================================================
 
         const quizData = [
-            { id: 1, question: "¿Cuál es el EPP básico y obligatorio a utilizar en planta?", options: ["Casco de seguridad sin barbiquejo, lentes de seguridad, protección auditiva, zapatos de seguridad, guantes, chaleco reflectante", "Casco de seguridad con barbiquejo, lentes de sol, protección auditiva, zapatos de seguridad, guantes, chaleco reflectante", "Casco de seguridad con barbiquejo, lentes de seguridad, protección auditiva, zapatos de seguridad, guantes, chaleco reflectante", "Casco de seguridad con barbiquejo, lentes de seguridad, protección auditiva, zapatillas de seguridad, guantes, chaleco reflectante"], correctAnswer: 3 },
-            { id: 2, question: "¿Qué tipo de equipo / aparejos se utiliza comúnmente para la carga suspendida? ", options: ["Grúas", "Huinches - Tecles", "Cadenas y cables", "Todas las anteriores"], correctAnswer: 4 },
-            { id: 3, question: "¿Cuál es el principal riesgo asociado con la carga suspendida?", options: ["Caída de la carga", "Atmósfera deficiente", "Caída de personas a distinto nivel", "Todas las anteriores"], correctAnswer: 1 },
-            { id: 4, question: "Al cruzar vías férreas es obligatorio:", options: ["Cruzar rápido.", "Pare, Mire y Escuche en pasos habilitados.", "Avisar por radio.", "Cruzar por cualquier lugar."], correctAnswer: 1 },
-            { id: 5, question: "Política de alcohol y drogas:", options: ["Permitido moderado.", "Solo prohibidas drogas ilícitas.", "Tolerancia Cero.", "Solo prohibido para maquinaria pesada."], correctAnswer: 2 },
-            { id: 6, question: "Antes de intervenir equipo eléctrico/mecánico:", options: ["Avisar a compañeros.", "Aplicar Bloqueo de Energías (LOTOTO).", "Desenchufar rápido.", "Poner letrero de cuidado."], correctAnswer: 1 },
-            { id: 7, question: "Si sufre un incidente leve:", options: ["Reportarlo inmediatamente.", "Ir a enfermería al final del turno.", "Resolverlo por su cuenta.", "Esperar si el dolor aumenta."], correctAnswer: 0 },
-            { id: 8, question: "Uso de teléfono celular:", options: ["En cualquier momento.", "Caminando, no conduciendo.", "Solo en zonas seguras o detenido.", "Cerca de grúas."], correctAnswer: 2 },
-            { id: 9, question: "¿Cómo clasificar residuos?", options: ["Todos juntos.", "Solo cartón y plástico.", "Según código de colores establecido.", "Peligrosos en cualquier basurero."], correctAnswer: 2 },
-            { id: 10, question: "Requisito para trabajos en altura (>1.8m):", options: ["Estar acompañado.", "Examen al día, arnés doble cabo y PTS.", "Usar escalera metálica."], correctAnswer: 1 }
+            { id: 1, question: "¿Cuál es el EPP básico y obligatorio a utilizar en planta?", options: ["Casco de seguridad sin barbiquejo, lentes de seguridad, protección auditiva, zapatos de seguridad, guantes, chaleco reflectante", "Casco de seguridad con barbiquejo, lentes de sol, protección auditiva, zapatos de seguridad, guantes, chaleco reflectante", "Casco de seguridad con barbiquejo, lentes de seguridad, protección auditiva, zapatos de seguridad, guantes, chaleco reflectante", "Casco de seguridad con barbiquejo, lentes de seguridad, protección auditiva, zapatillas de seguridad, guantes, chaleco reflectante"], correctAnswer: 2 },
+            { id: 2, question: "¿Qué tipo de equipo / aparejos se utiliza comúnmente para la carga suspendida? ", options: ["Grúas", "Huinches - Tecles", "Cadenas y cables", "Todas las anteriores"], correctAnswer: 3 },
+            { id: 3, question: "¿Cuál es el principal riesgo asociado con la carga suspendida?", options: ["Caída de la carga", "Atmósfera deficiente", "Caída de personas a distinto nivel", "Todas las anteriores"], correctAnswer: 0 },
+            { id: 4, question: "¡Qué medida de seguridad es fundamental para la carga suspendida?", options: ["Realizar inspecciones regulares del equipo", "Capacitar a los trabajadores en técnicas de manejo de carga", "Prohibir transitar bajo carga suspendida", "Todas las anteriores"], correctAnswer: 3 },
+            { id: 5, question: "¿Qué ejemplo es una situación en que un trabajador podría quedar atrapado en una industria?", options: ["Un trabajador que se cae de una altura", "Un trabajador que se expone a intervención en una correa transportadora en movimiento", "Un trabajador que se expone a una sustancia química peligrosa", "Un trabajador que se lesiona al levantar un objeto pesado"], correctAnswer: 1 },
+            { id: 6, question: "¿Cuál es la mejor forma de prevenir el atrapamiento en una industria?", options: ["Proporcionar capacitación a los trabajadores sobre los riesgos de atrapamiento", "Realizar inspecciones regulares del equipo y las instalaciones", "Contar con un sistema de bloqueo de equipos", "Todas las anteriores"], correctAnswer: 3 },
+            { id: 7, question: "¿Cuál es el principal riesgo asociado con los vehículos y maquinaria en movimiento?", options: ["Caída desde altura", "Atropello, Lesiones por objetos en movimiento", "Exposición a sustancias químicas peligrosas", "Incendios"], correctAnswer: 1 },
+            { id: 8, question: "¿Cuál es el procedimiento correcto para cruzar una zona donde se encuentran vehículos y maquinaria en movimiento?", options: ["Cruzar rápidamente sin mirar", "Mirar a ambos lados antes de cruzar", "No utilizar un paso peatonal designado y/o autorizado", "No esparar a que el equipo se detenga antes de cruzar"], correctAnswer: 2 },
+            { id: 9, question: "Para conductores de camiones que ingresa a realizar carga y descarga de productos, esta prohibido", options: ["Subirse a la estructura del camión y/o carga a realizar alguna tarea", "Bajarse del camión durante la carga y descarga", "Hablar por celular o utilizar cualquier elemento distractor durante la conducción", "Todas las anteriores"], correctAnswer: 3 },
+            { id: 10, question: "¿Qué es lo que debe hacer un operador de vehiculos o maquinaria en movimiento si nota un problema con el equipo?", options: ["Continuar operando el equipo.Existe un costo operacional por detención", "detener el equipo y notificar a un supervisor", "Intentar reparar el equipo el mismo", "Ignorar el problema y seguir operando"], correctAnswer: 1 }
         ];
 
         let AppState = {
-            user: { nombre: '', rut: '' },
+            user: { nombre: '', rut: '', empresa: '' },
             currentQuestionIndex: 0,
             answers: new Array(10).fill(null),
             score: 0,
@@ -155,6 +156,7 @@
                     <div class="space-y-4">
                         <input type="text" id="input-name" placeholder="Nombre Completo" class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-huachipato-blue outline-none">
                         <input type="text" id="input-rut" placeholder="RUT (Ej: 12.345.678-9)" class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-huachipato-blue outline-none" oninput="this.value = formatRut(this.value)">
+                        <input type="text" id="input-empresa" placeholder="Nombre de la Empresa / Contratista" class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-huachipato-blue outline-none">
                         <button onclick="validateLogin()" class="w-full bg-huachipato-blue text-white font-bold py-3 rounded-lg hover:bg-huachipato-dark transition">Iniciar Inducción</button>
                     </div>
                 </div>`;
@@ -163,13 +165,14 @@
         window.validateLogin = function() {
             const n = document.getElementById('input-name').value.trim();
             const r = document.getElementById('input-rut').value.trim();
-            if(n.length > 5 && r.length >= 8) {
-                AppState.user = { nombre: n, rut: r };
+            const e = document.getElementById('input-empresa').value.trim();
+            if(n.length > 5 && r.length >= 8 && e.length > 2) {
+                AppState.user = { nombre: n, rut: r, empresa: e };
                 document.getElementById('user-badge').classList.remove('hidden');
                 document.getElementById('badge-name').textContent = n.split(' ')[0];
                 renderVideo();
             } else {
-                showToast("Por favor, ingrese datos válidos");
+                showToast("Por favor, ingrese datos válidos en todos los campos");
             }
         };
 
@@ -289,18 +292,19 @@
             doc.setTextColor(0, 0, 0); doc.setFontSize(11); doc.setFont("helvetica", "normal");
             doc.text(`Nombre Completo: ${AppState.user.nombre}`, 20, 68);
             doc.text(`RUT de Identidad: ${AppState.user.rut}`, 20, 76);
-            doc.text(`Fecha y Hora de Emisión: ${new Date().toLocaleString()}`, 20, 84);
+            doc.text(`Empresa: ${AppState.user.empresa}`, 20, 84);
+            doc.text(`Fecha y Hora de Emisión: ${new Date().toLocaleString()}`, 20, 92);
             doc.setFont("helvetica", "bold");
-            if(passed) { doc.setTextColor(0, 128, 0); doc.text(`Puntaje: ${AppState.score}% - APROBADO`, 20, 95); } 
-            else { doc.setTextColor(227, 0, 15); doc.text(`Puntaje: ${AppState.score}% - REPROBADO`, 20, 95); }
+            if(passed) { doc.setTextColor(0, 128, 0); doc.text(`Puntaje: ${AppState.score}% - APROBADO`, 20, 103); } 
+            else { doc.setTextColor(227, 0, 15); doc.text(`Puntaje: ${AppState.score}% - REPROBADO`, 20, 103); }
 
-            if(AppState.signatureImage) { doc.addImage(AppState.signatureImage, 'PNG', 75, 120, 60, 30); }
-            doc.text(AppState.user.nombre, 105, 160, { align: 'center' });
+            if(AppState.signatureImage) { doc.addImage(AppState.signatureImage, 'PNG', 75, 130, 60, 30); }
+            doc.text(AppState.user.nombre, 105, 170, { align: 'center' });
 
             const pdfBase64 = doc.output('datauristring');
             doc.save(`Acreditacion_${AppState.user.rut.replace(/[^0-9kK]/g, '')}.pdf`);
 
-            if (GOOGLE_SCRIPT_URL !== "TUhttps://script.google.com/macros/s/AKfycbwwTshxwKhg4s8a0ACTTxJQFC7xQIZKLmbvb995T_X3xFr8r4QNwKGqIsiHFj7GMSvpFg/exec") {
+            if (GOOGLE_SCRIPT_URL !== "https://script.google.com/macros/s/AKfycbxnueP-fkstg1aIAw7IdscUgSusTynyqG5rqgPX5BeZb-hRY71ExVW_Wz1kn5_R3arq/exec") {
                 try {
                     await fetch(GOOGLE_SCRIPT_URL, {
                         method: 'POST',
@@ -310,6 +314,7 @@
                             fecha: new Date().toLocaleString(),
                             nombre: AppState.user.nombre,
                             rut: AppState.user.rut,
+                            empresa: AppState.user.empresa,
                             score: AppState.score,
                             estado: passed ? 'APROBADO' : 'REPROBADO',
                             respuestas: detalleFormulario,
@@ -352,7 +357,7 @@
                 
                 document.getElementById('app-container').innerHTML = `<div class="text-center relative z-10"><p class="text-huachipato-blue font-bold animate-pulse">Descargando registros en tiempo real...</p></div>`;
                 
-                if (GOOGLE_SCRIPT_URL !== "Thttps://script.google.com/macros/s/AKfycbwwTshxwKhg4s8a0ACTTxJQFC7xQIZKLmbvb995T_X3xFr8r4QNwKGqIsiHFj7GMSvpFg/exec") {
+                if (GOOGLE_SCRIPT_URL !== "https://script.google.com/macros/s/AKfycbxnueP-fkstg1aIAw7IdscUgSusTynyqG5rqgPX5BeZb-hRY71ExVW_Wz1kn5_R3arq/exec") {
                     try {
                         const response = await fetch(GOOGLE_SCRIPT_URL);
                         const result = await response.json();
@@ -363,7 +368,6 @@
                         showToast("Error al leer desde la API de Google Sheets.");
                     }
                 }
-                // Al cargar por primera vez, enviamos el arreglo completo y limpio de filtros
                 renderAdminPanel(AppState.cachedRecords);
             } else {
                 alert("Usuario o contraseña incorrectos.");
@@ -377,33 +381,82 @@
             renderLogin();
         }
 
-        // Esta función gestiona el filtrado por RUT en tiempo real y mantiene el orden inverso
-        window.filterRecordsByRut = function() {
-            const query = document.getElementById('search-rut').value.toLowerCase().replace(/[^0-9kK]/g, '');
+        // Gestiona el filtrado combinado por RUT y Empresa en tiempo real
+        window.filterRecords = function() {
+            const queryRut = document.getElementById('search-rut').value.toLowerCase().replace(/[^0-9kK]/g, '');
+            const queryEmpresa = document.getElementById('search-empresa').value.toLowerCase().trim();
             
-            // Creamos una copia invertida del estado original para mantener siempre el más nuevo primero
             const invertedRecords = [...AppState.cachedRecords].reverse();
             
-            // Si hay texto en el input, filtramos sobre la lista ya invertida
             const filtered = invertedRecords.filter(item => {
-                const cleanRut = item.rut.toLowerCase().replace(/[^0-9kK]/g, '');
-                return cleanRut.includes(query);
+                const cleanRut = (item.rut || '').toLowerCase().replace(/[^0-9kK]/g, '');
+                const itemEmpresa = (item.empresa || '').toLowerCase();
+                
+                const matchesRut = cleanRut.includes(queryRut);
+                const matchesEmpresa = itemEmpresa.includes(queryEmpresa);
+                
+                return matchesRut && matchesEmpresa;
             });
             
             renderTableRows(filtered);
         };
 
-        // Renderiza el esqueleto principal del panel y el buscador
+        // Genera y descarga el archivo Excel con los datos filtrados actualmente
+        window.exportToExcel = function() {
+            const queryRut = document.getElementById('search-rut').value.toLowerCase().replace(/[^0-9kK]/g, '');
+            const queryEmpresa = document.getElementById('search-empresa').value.toLowerCase().trim();
+            
+            // Filtrar los datos que el usuario está viendo actualmente
+            const invertedRecords = [...AppState.cachedRecords].reverse();
+            const dataToExport = invertedRecords.filter(item => {
+                const cleanRut = (item.rut || '').toLowerCase().replace(/[^0-9kK]/g, '');
+                const itemEmpresa = (item.empresa || '').toLowerCase();
+                return cleanRut.includes(queryRut) && itemEmpresa.includes(queryEmpresa);
+            });
+
+            if(dataToExport.length === 0) {
+                return alert("No hay datos en la tabla para exportar.");
+            }
+
+            // Mapear los objetos al formato limpio de la planilla Excel
+            const rowsExcel = dataToExport.map(item => ({
+                "Fecha / Hora": item.fecha,
+                "Nombre Completo": item.nombre,
+                "RUT": item.rut,
+                "Empresa": item.empresa || "No Registrada",
+                "Puntaje (%)": item.score,
+                "Estado": item.estado
+            }));
+
+            // Construir el libro de trabajo con SheetJS
+            const worksheet = XLSX.utils.json_to_sheet(rowsExcel);
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, "Acreditaciones");
+
+            // Autoajustar los anchos de columnas para una visualización profesional
+            const maxProps = [{wch: 22}, {wch: 35}, {wch: 15}, {wch: 25}, {wch: 12}, {wch: 15}];
+            worksheet['!cols'] = maxProps;
+
+            // Descargar el archivo
+            XLSX.writeFile(workbook, `Acreditaciones_Huachipato_${new Date().toISOString().slice(0,10)}.xlsx`);
+        };
+
+        // Renderiza el esqueleto principal del panel con los dos inputs de búsqueda y el botón Excel
         function renderAdminPanel(rows) {
             document.getElementById('app-container').innerHTML = `
                 <div class="w-full max-w-6xl bg-white rounded-xl shadow-xl p-6 fade-in relative z-10">
-                    <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 border-b pb-4 gap-4">
+                    <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-6 border-b pb-4 gap-4">
                         <div>
                             <h2 class="text-2xl font-bold text-huachipato-dark">Panel de Control - Cloud</h2>
                             <p class="text-xs text-gray-500">Sincronizado directamente con tu planilla en línea</p>
                         </div>
-                        <div class="w-full md:w-72">
-                            <input type="text" id="search-rut" oninput="filterRecordsByRut()" placeholder="Buscar por RUT (ej: 12.345.678-9)" class="w-full p-2.5 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-huachipato-blue" />
+                        <div class="flex flex-col sm:flex-row gap-2 w-full lg:w-auto items-stretch sm:items-center">
+                            <input type="text" id="search-rut" oninput="filterRecords()" placeholder="Buscar por RUT..." class="w-full sm:w-48 p-2 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-huachipato-blue" />
+                            <input type="text" id="search-empresa" oninput="filterRecords()" placeholder="Buscar por Empresa..." class="w-full sm:w-48 p-2 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-huachipato-blue" />
+                            <button onclick="exportToExcel()" class="bg-green-700 text-white font-bold text-xs px-4 py-2.5 rounded-lg hover:bg-green-800 transition flex items-center justify-center gap-2">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                                Descargar Excel
+                            </button>
                         </div>
                     </div>
                     
@@ -414,34 +467,31 @@
                                     <th class="p-3 font-semibold">Fecha</th>
                                     <th class="p-3 font-semibold">Nombre Completo</th>
                                     <th class="p-3 font-semibold">RUT</th>
+                                    <th class="p-3 font-semibold">Empresa</th>
                                     <th class="p-3 font-semibold text-center">Nota</th>
                                     <th class="p-3 font-semibold text-center">Estado</th>
                                     <th class="p-3 font-semibold text-center">Acciones</th>
                                 </tr>
                             </thead>
                             <tbody id="admin-table-body">
-                                </tbody>
+                            </tbody>
                         </table>
                     </div>
                 </div>`;
             
-            // Al inicializar el panel, llamamos al filtro (que por defecto tomará todo al estar vacío el input y lo invertirá)
-            filterRecordsByRut();
+            filterRecords();
         }
 
-        // Renderiza únicamente el cuerpo de la tabla (optimiza la reactividad al escribir en el filtro)
         function renderTableRows(rows) {
             const tbody = document.getElementById('admin-table-body');
             if(!tbody) return;
 
             if(rows.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="6" class="p-4 text-center text-gray-400">No se detectan filas que coincidan con la búsqueda.</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="7" class="p-4 text-center text-gray-400">No se detectan filas que coincidan con la búsqueda.</td></tr>';
                 return;
             }
 
             tbody.innerHTML = rows.map((item) => {
-                // Buscamos el índice real correspondiente en la base de datos original (AppState.cachedRecords)
-                // Esto asegura que los botones "Ver Formulario" y "Recuperar PDF" abran el registro correcto.
                 const originalIdx = AppState.cachedRecords.findIndex(r => r === item);
 
                 return `
@@ -449,6 +499,7 @@
                         <td class="p-3 whitespace-nowrap">${item.fecha}</td>
                         <td class="p-3 font-medium text-gray-900">${item.nombre}</td>
                         <td class="p-3">${item.rut}</td>
+                        <td class="p-3">${item.empresa || '<span class="text-gray-400 italic">No registrada</span>'}</td>
                         <td class="p-3 text-center font-bold">${item.score}</td>
                         <td class="p-3 text-center">
                             <span class="px-2 py-1 rounded-full text-xs font-bold ${item.estado === 'APROBADO' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}">
@@ -466,7 +517,7 @@
 
         window.verDetalleCloud = function(index) {
             const item = AppState.cachedRecords[index];
-            let info = `DETALLE DE FORMULARIO DE: ${item.nombre}\n\n`;
+            let info = `DETALLE DE FORMULARIO DE: ${item.nombre}\nEMPRESA: ${item.empresa || 'No Registrada'}\n\n`;
             item.respuestas.forEach((r, i) => {
                 info += `${i + 1}. ${r.pregunta}\n   Marcó: ${r.seleccion} -> [${r.resultado}]\n\n`;
             });
