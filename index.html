@@ -290,7 +290,7 @@
             AppState.score = correct * 10;
             const passed = AppState.score >= 80;
 
-            document.getElementById('app-container').innerHTML = `<div class="text-center relative z-10"><p class="animate-pulse font-bold text-huachipato-blue">Sincronizando registro con Google Sheets y descargando copia PDF...</p></div>`;
+            document.getElementById('app-container').innerHTML = `<div class="text-center relative z-10"><p class="animate-pulse font-bold text-huachipato-blue">Sincronizando registro y descargando copia PDF...</p></div>`;
 
             // Mapeo detallado del formulario para la base de datos cloud
             const detalleFormulario = quizData.map((q, i) => {
@@ -356,7 +356,7 @@
                 <div class="w-full max-w-md bg-white rounded-xl shadow-xl p-8 text-center border-t-8 ${passed ? 'border-green-500' : 'border-huachipato-red'} fade-in relative z-10">
                     <h2 class="text-3xl font-bold mb-4">${passed ? '¡Acreditado!' : 'No Acreditado'}</h2>
                     <p class="text-xl mb-4">Puntaje Obtenido: <span class="font-bold">${AppState.score}%</span></p>
-                    <p class="text-sm text-gray-500 mb-8">La inducción ha concluido. El registro se procesó en la base de datos central de Google Sheets.</p>
+                    <p class="text-sm text-gray-500 mb-8">La inducción ha concluido. El registro se procesó en la base de datos central.</p>
                     <button onclick="location.reload()" class="w-full bg-huachipato-dark text-white py-3 rounded-lg font-bold hover:bg-huachipato-blue transition">Volver al Inicio</button>
                 </div>`;
         }
