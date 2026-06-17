@@ -1,2138 +1,582 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>DJI Simulador v6 — Enhanced</title>
-<style>
-  @import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@300;400;500;600;700&family=Exo+2:wght@200;300;400;600&family=Share+Tech+Mono&display=swap');
-
-  :root {
-    --green: #00ff41;
-    --green-dim: #00cc33;
-    --green-dark: #003311;
-    --amber: #ffb800;
-    --amber-dim: #cc9000;
-    --red: #ff3333;
-    --blue: #00aaff;
-    --white: #e8f0e8;
-    --bg: #080c08;
-    --panel: rgba(4, 12, 4, 0.85);
-    --border: rgba(0, 255, 65, 0.25);
-    --border-bright: rgba(0, 255, 65, 0.6);
-  }
-
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-
-  body {
-    background: var(--bg);
-    font-family: 'Rajdhani', sans-serif;
-    color: var(--green);
-    overflow: hidden;
-    user-select: none;
-  }
-
-  #canvas-container {
-    position: fixed; inset: 0;
-    z-index: 0;
-  }
-
-  canvas { display: block; width: 100% !important; height: 100% !important; }
-
-  /* ── TOP HUD BAR ── */
-  #top-hud {
-    position: fixed; top: 0; left: 0; right: 0;
-    height: 48px;
-    background: linear-gradient(180deg, rgba(0,0,0,0.9) 0%, rgba(0,8,0,0.7) 100%);
-    border-bottom: 1px solid var(--border);
-    display: flex; align-items: center;
-    padding: 0 12px;
-    gap: 6px;
-    z-index: 100;
-    backdrop-filter: blur(4px);
-  }
-
-  .hud-logo {
-    font-family: 'Share Tech Mono', monospace;
-    font-size: 14px;
-    color: var(--green);
-    letter-spacing: 3px;
-    border: 1px solid var(--green-dim);
-    padding: 2px 8px;
-    margin-right: 8px;
-    text-shadow: 0 0 8px var(--green);
-  }
-
-  .top-stat {
-    display: flex; flex-direction: column; align-items: center;
-    padding: 2px 10px;
-    border-left: 1px solid var(--border);
-    min-width: 60px;
-  }
-  .top-stat-label {
-    font-size: 9px; font-weight: 600; letter-spacing: 1px;
-    color: rgba(0,255,65,0.5); text-transform: uppercase;
-  }
-  .top-stat-value {
-    font-size: 15px; font-weight: 700;
-    font-family: 'Share Tech Mono', monospace;
-    color: var(--green);
-    text-shadow: 0 0 6px var(--green);
-  }
-  .top-stat-value.amber { color: var(--amber); text-shadow: 0 0 6px var(--amber); }
-  .top-stat-value.red   { color: var(--red);   text-shadow: 0 0 6px var(--red); }
-  .top-stat-value.blue  { color: var(--blue);  text-shadow: 0 0 6px var(--blue); }
-
-  .top-spacer { flex: 1; }
-
-  #flight-mode-badge {
-    padding: 4px 12px;
-    border: 1px solid var(--amber);
-    color: var(--amber);
-    font-size: 13px; font-weight: 700;
-    letter-spacing: 2px;
-    text-shadow: 0 0 8px var(--amber);
-    box-shadow: inset 0 0 8px rgba(255,184,0,0.1);
-  }
-
-  /* ── SIDE HUD PANELS ── */
-  .side-panel {
-    position: fixed;
-    top: 56px;
-    background: var(--panel);
-    border: 1px solid var(--border);
-    backdrop-filter: blur(6px);
-    z-index: 100;
-    padding: 10px;
-    min-width: 160px;
-  }
-
-  #left-panel { left: 8px; border-radius: 0 0 4px 4px; }
-  #right-panel { right: 8px; border-radius: 0 0 4px 4px; }
-
-  .panel-title {
-    font-size: 9px; font-weight: 600; letter-spacing: 2px;
-    color: rgba(0,255,65,0.4); text-transform: uppercase;
-    border-bottom: 1px solid var(--border);
-    padding-bottom: 4px; margin-bottom: 8px;
-  }
-
-  .data-row {
-    display: flex; justify-content: space-between; align-items: baseline;
-    margin-bottom: 5px;
-  }
-  .data-label {
-    font-size: 10px; color: rgba(0,255,65,0.5); letter-spacing: 1px;
-    text-transform: uppercase;
-  }
-  .data-value {
-    font-family: 'Share Tech Mono', monospace;
-    font-size: 15px; font-weight: 700;
-    color: var(--green);
-    text-shadow: 0 0 5px rgba(0,255,65,0.5);
-  }
-  .data-unit {
-    font-size: 9px; color: rgba(0,255,65,0.4);
-    margin-left: 2px;
-  }
-
-  .battery-wrap { margin: 8px 0 4px; }
-  .battery-track {
-    height: 6px; background: rgba(0,255,65,0.1);
-    border: 1px solid var(--border); border-radius: 2px;
-    overflow: hidden; margin-top: 4px;
-  }
-  #battery-fill {
-    height: 100%; width: 87%;
-    background: linear-gradient(90deg, var(--green-dim), var(--green));
-    transition: width 0.5s, background 0.5s;
-    box-shadow: 0 0 6px var(--green);
-  }
-
-  /* ── COMPASS ── */
-  #compass-wrap {
-    position: fixed; bottom: 90px; left: 50%;
-    transform: translateX(-50%);
-    z-index: 100;
-    display: flex; flex-direction: column; align-items: center;
-    gap: 4px;
-  }
-
-  #compass-ring {
-    width: 80px; height: 80px;
-    border-radius: 50%;
-    border: 2px solid var(--border-bright);
-    background: radial-gradient(circle at center, rgba(0,20,0,0.9), rgba(0,8,0,0.95));
-    position: relative;
-    box-shadow: 0 0 12px rgba(0,255,65,0.2), inset 0 0 12px rgba(0,0,0,0.5);
-  }
-
-  #compass-needle {
-    position: absolute; top: 50%; left: 50%;
-    width: 2px; height: 32px;
-    margin-left: -1px; margin-top: -32px;
-    transform-origin: bottom center;
-    background: linear-gradient(180deg, var(--red) 50%, rgba(0,255,65,0.6) 50%);
-    transition: transform 0.1s linear;
-    border-radius: 1px 1px 0 0;
-  }
-
-  .compass-mark {
-    position: absolute; font-size: 9px; font-weight: 700;
-    color: rgba(0,255,65,0.7); width: 12px; text-align: center;
-  }
-
-  #compass-hdg {
-    font-family: 'Share Tech Mono', monospace;
-    font-size: 13px; color: var(--green);
-    text-shadow: 0 0 6px var(--green);
-    letter-spacing: 1px;
-  }
-
-  /* ── ADI ── */
-  #adi-wrap {
-    position: fixed; bottom: 90px; right: 16px;
-    z-index: 100; width: 110px; height: 110px;
-  }
-  #adi-canvas { border-radius: 50%; }
-
-  /* ── MINI MAP ── */
-  #minimap-wrap {
-    position: fixed; top: 56px; right: 176px;
-    z-index: 100;
-    width: 140px; height: 140px;
-    border: 1px solid var(--border-bright);
-    background: rgba(0,15,0,0.9);
-    overflow: hidden;
-  }
-  #minimap-canvas { width: 100%; height: 100%; }
-  .minimap-label {
-    position: absolute; bottom: 2px; left: 4px;
-    font-size: 8px; color: rgba(0,255,65,0.4); letter-spacing: 1px;
-  }
-
-  /* ── BOTTOM CONTROLS ── */
-  #bottom-controls {
-    position: fixed; bottom: 0; left: 0; right: 0;
-    height: 82px;
-    background: linear-gradient(0deg, rgba(0,0,0,0.95) 0%, rgba(0,5,0,0.8) 100%);
-    border-top: 1px solid var(--border);
-    display: flex; align-items: center; justify-content: space-between;
-    padding: 0 20px;
-    z-index: 100;
-    backdrop-filter: blur(6px);
-  }
-
-  .joystick-section {
-    display: flex; flex-direction: column; align-items: center; gap: 4px;
-  }
-  .joystick-label {
-    font-size: 9px; letter-spacing: 2px; color: rgba(0,255,65,0.4);
-    text-transform: uppercase;
-  }
-  .joystick-outer {
-    width: 72px; height: 72px;
-    border-radius: 50%;
-    border: 2px solid var(--border-bright);
-    background: radial-gradient(circle at center, #0a1a0a, #050d05);
-    position: relative;
-    box-shadow: 0 0 10px rgba(0,255,65,0.15), inset 0 2px 4px rgba(0,0,0,0.8);
-    cursor: pointer;
-    touch-action: none;
-  }
-  .joystick-inner {
-    width: 28px; height: 28px;
-    border-radius: 50%;
-    background: radial-gradient(circle at 35% 35%, #1a3a1a, #0a1a0a);
-    border: 1px solid var(--green-dim);
-    position: absolute;
-    top: 50%; left: 50%;
-    transform: translate(-50%, -50%);
-    box-shadow: 0 2px 8px rgba(0,0,0,0.8), 0 0 6px rgba(0,255,65,0.2);
-    transition: transform 0.05s;
-    pointer-events: none;
-  }
-  .joystick-crosshair { position: absolute; inset: 0; pointer-events: none; }
-  .crosshair-h, .crosshair-v { position: absolute; background: rgba(0,255,65,0.1); }
-  .crosshair-h { height: 1px; top: 50%; left: 0; right: 0; transform: translateY(-50%); }
-  .crosshair-v { width: 1px; left: 50%; top: 0; bottom: 0; transform: translateX(-50%); }
-
-  #center-controls {
-    display: flex; flex-direction: column; align-items: center; gap: 6px;
-  }
-  .btn-row { display: flex; gap: 8px; }
-  .ctrl-btn {
-    font-family: 'Rajdhani', sans-serif;
-    font-size: 11px; font-weight: 700;
-    letter-spacing: 1px;
-    padding: 5px 12px;
-    border: 1px solid var(--border-bright);
-    background: rgba(0,20,0,0.8);
-    color: var(--green);
-    cursor: pointer;
-    text-transform: uppercase;
-    transition: all 0.15s;
-    border-radius: 2px;
-  }
-  .ctrl-btn:hover { background: rgba(0,255,65,0.1); box-shadow: 0 0 8px rgba(0,255,65,0.3); }
-  .ctrl-btn:active { background: rgba(0,255,65,0.2); }
-  .ctrl-btn.amber { border-color: var(--amber); color: var(--amber); background: rgba(20,15,0,0.8); }
-  .ctrl-btn.amber:hover { background: rgba(255,184,0,0.1); box-shadow: 0 0 8px rgba(255,184,0,0.3); }
-  .ctrl-btn.red { border-color: var(--red); color: var(--red); background: rgba(20,0,0,0.8); }
-  .ctrl-btn.red:hover { background: rgba(255,51,51,0.15); box-shadow: 0 0 8px rgba(255,51,51,0.3); }
-  .ctrl-btn.red.active-btn { background: rgba(255,51,51,0.25); box-shadow: 0 0 12px rgba(255,51,51,0.5); }
-  .ctrl-btn.blue { border-color: var(--blue); color: var(--blue); background: rgba(0,10,20,0.8); }
-
-  #gimbal-section { display: flex; flex-direction: column; align-items: center; gap: 4px; }
-  .gimbal-label { font-size: 9px; letter-spacing: 2px; color: rgba(0,255,65,0.4); }
-  #gimbal-slider {
-    writing-mode: vertical-lr; direction: rtl;
-    appearance: none; width: 28px; height: 64px;
-    background: transparent; outline: none; cursor: pointer;
-  }
-  #gimbal-slider::-webkit-slider-runnable-track {
-    width: 3px; height: 64px;
-    background: rgba(0,255,65,0.2);
-    border: 1px solid var(--border); border-radius: 2px;
-  }
-  #gimbal-slider::-webkit-slider-thumb {
-    appearance: none; width: 16px; height: 16px;
-    border-radius: 2px; background: var(--green-dim);
-    border: 1px solid var(--green); box-shadow: 0 0 6px var(--green);
-    margin-left: -7px;
-  }
-
-  #status-msg {
-    position: fixed; top: 56px; left: 50%; transform: translateX(-50%);
-    z-index: 110;
-    font-size: 12px; font-weight: 600; letter-spacing: 2px;
-    color: var(--amber); text-shadow: 0 0 8px var(--amber);
-    background: rgba(0,0,0,0.7);
-    padding: 4px 16px;
-    border: 1px solid rgba(255,184,0,0.3);
-    opacity: 0; transition: opacity 0.3s;
-    pointer-events: none; text-transform: uppercase;
-  }
-
-  #night-overlay {
-    position: fixed; inset: 0; z-index: 1; pointer-events: none;
-    background: radial-gradient(ellipse at center, transparent 40%, rgba(0,0,0,0.4) 100%);
-    opacity: 0; transition: opacity 2s;
-  }
-
-  .gps-dots { display: flex; gap: 2px; align-items: center; }
-  .gps-dot { width: 4px; height: 10px; border-radius: 1px; background: var(--green); opacity: 0.3; transition: opacity 0.3s; }
-  .gps-dot.active { opacity: 1; box-shadow: 0 0 4px var(--green); }
-
-  #key-hints {
-    position: fixed; bottom: 90px; left: 8px;
-    z-index: 100;
-    background: var(--panel);
-    border: 1px solid var(--border);
-    padding: 8px 10px;
-    font-size: 9px; letter-spacing: 1px;
-    color: rgba(0,255,65,0.4); line-height: 1.8;
-  }
-  #key-hints span { color: rgba(0,255,65,0.7); font-weight: 600; }
-
-  .sep-line { width: 1px; height: 32px; background: var(--border); margin: 0 4px; }
-
-  body::after {
-    content: ''; position: fixed; inset: 0;
-    background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.03) 2px, rgba(0,0,0,0.03) 4px);
-    pointer-events: none; z-index: 200;
-  }
-
-  #vignette {
-    position: fixed; inset: 0;
-    background: radial-gradient(ellipse at center, transparent 55%, rgba(0,0,0,0.6) 100%);
-    pointer-events: none; z-index: 2;
-  }
-
-  .corner { position: fixed; width: 20px; height: 20px; z-index: 101; pointer-events: none; }
-  .corner-tl { top: 52px; left: 4px; border-top: 1px solid var(--green-dim); border-left: 1px solid var(--green-dim); }
-  .corner-tr { top: 52px; right: 4px; border-top: 1px solid var(--green-dim); border-right: 1px solid var(--green-dim); }
-  .corner-bl { bottom: 86px; left: 4px; border-bottom: 1px solid var(--green-dim); border-left: 1px solid var(--green-dim); }
-  .corner-br { bottom: 86px; right: 4px; border-bottom: 1px solid var(--green-dim); border-right: 1px solid var(--green-dim); }
-
-  #throttle-bar {
-    position: fixed; left: 180px; top: 56px; bottom: 88px;
-    width: 14px; z-index: 100;
-    display: flex; flex-direction: column; align-items: center; gap: 4px;
-  }
-  .thr-label { font-size: 8px; color: rgba(0,255,65,0.4); letter-spacing: 1px; writing-mode: vertical-rl; transform: rotate(180deg); }
-  .thr-track { flex: 1; width: 4px; background: rgba(0,255,65,0.08); border: 1px solid var(--border); border-radius: 2px; position: relative; overflow: hidden; }
-  #thr-fill { position: absolute; bottom: 0; left: 0; right: 0; height: 0%; background: linear-gradient(0deg, var(--green-dim), var(--green)); transition: height 0.1s; box-shadow: 0 0 6px var(--green); }
-
-  #loading-screen {
-    position: fixed; inset: 0; z-index: 999;
-    background: #000;
-    display: flex; flex-direction: column;
-    align-items: center; justify-content: center; gap: 20px;
-  }
-  #loading-screen .logo { font-size: 32px; letter-spacing: 8px; color: var(--green); font-family: 'Share Tech Mono', monospace; text-shadow: 0 0 20px var(--green); }
-  #loading-screen .sub { font-size: 12px; letter-spacing: 3px; color: rgba(0,255,65,0.4); }
-  #load-bar-track { width: 300px; height: 2px; background: rgba(0,255,65,0.1); border: 1px solid var(--border); }
-  #load-bar-fill { height: 100%; width: 0%; background: var(--green); box-shadow: 0 0 8px var(--green); transition: width 0.3s; }
-  #load-text { font-size: 10px; color: rgba(0,255,65,0.5); letter-spacing: 2px; font-family: 'Share Tech Mono'; }
-</style>
-</head>
-<body>
-
-<div id="loading-screen">
-  <div class="logo">SIMULADOR RPA SECURITAS</div>
-  <div class="sub">SISTEMA DE ENTRENAMIENTO DE VUELO v6.0 — ENHANCED</div>
-  <div id="load-bar-track"><div id="load-bar-fill"></div></div>
-  <div id="load-text">INITIALIZING TERRAIN ENGINE...</div>
-</div>
-
-<div id="canvas-container"></div>
-<div id="vignette"></div>
-<div id="night-overlay"></div>
-
-<div class="corner corner-tl"></div>
-<div class="corner corner-tr"></div>
-<div class="corner corner-bl"></div>
-<div class="corner corner-br"></div>
-
-<!-- TOP HUD -->
-<div id="top-hud">
-  <div class="hud-logo">DJI</div>
-  <div class="top-stat">
-    <div class="top-stat-label">ALT AGL</div>
-    <div class="top-stat-value" id="hud-alt">0.0<span style="font-size:9px;opacity:.5">m</span></div>
-  </div>
-  <div class="top-stat">
-    <div class="top-stat-label">H.SPD</div>
-    <div class="top-stat-value" id="hud-hspd">0.0<span style="font-size:9px;opacity:.5">m/s</span></div>
-  </div>
-  <div class="top-stat">
-    <div class="top-stat-label">V.SPD</div>
-    <div class="top-stat-value" id="hud-vspd">0.0<span style="font-size:9px;opacity:.5">m/s</span></div>
-  </div>
-  <div class="sep-line"></div>
-  <div class="top-stat">
-    <div class="top-stat-label">DIST</div>
-    <div class="top-stat-value blue" id="hud-dist">0<span style="font-size:9px;opacity:.5">m</span></div>
-  </div>
-  <div class="top-stat">
-    <div class="top-stat-label">HEADING</div>
-    <div class="top-stat-value" id="hud-hdg">000°</div>
-  </div>
-  <div class="sep-line"></div>
-  <div class="top-stat">
-    <div class="top-stat-label">GPS</div>
-    <div class="gps-dots">
-      <div class="gps-dot active" id="gd1"></div>
-      <div class="gps-dot active" id="gd2"></div>
-      <div class="gps-dot active" id="gd3"></div>
-      <div class="gps-dot active" id="gd4"></div>
-      <div class="gps-dot active" id="gd5"></div>
-    </div>
-  </div>
-  <div class="top-stat">
-    <div class="top-stat-label">SATS</div>
-    <div class="top-stat-value" id="hud-sats">14</div>
-  </div>
-  <div class="top-stat">
-    <div class="top-stat-label">WIND</div>
-    <div class="top-stat-value amber" id="hud-wind">2.1<span style="font-size:9px;opacity:.5">m/s</span></div>
-  </div>
-  <div class="top-stat">
-    <div class="top-stat-label">TEMP</div>
-    <div class="top-stat-value" id="hud-temp">22°C</div>
-  </div>
-  <div class="top-spacer"></div>
-  <div id="flight-mode-badge">P-GPS</div>
-  <div class="top-stat" style="margin-left:8px">
-    <div class="top-stat-label">BATT</div>
-    <div class="top-stat-value" id="hud-batt" style="color:var(--green)">87%</div>
-  </div>
-</div>
-
-<div id="status-msg">MOTORS ARMED — READY TO FLY</div>
-
-<!-- LEFT PANEL -->
-<div id="left-panel" class="side-panel">
-  <div class="panel-title">◈ POSITION</div>
-  <div class="data-row">
-    <span class="data-label">ASL</span>
-    <span><span class="data-value" id="stat-asl">120.0</span><span class="data-unit">m</span></span>
-  </div>
-  <div class="data-row">
-    <span class="data-label">AGL</span>
-    <span><span class="data-value" id="stat-agl">0.0</span><span class="data-unit">m</span></span>
-  </div>
-  <div class="data-row">
-    <span class="data-label">LAT</span>
-    <span><span class="data-value" id="stat-lat" style="font-size:12px">-36.8240</span></span>
-  </div>
-  <div class="data-row">
-    <span class="data-label">LON</span>
-    <span><span class="data-value" id="stat-lon" style="font-size:12px">-73.0498</span></span>
-  </div>
-  <div class="panel-title" style="margin-top:10px">◈ ATTITUDE</div>
-  <div class="data-row">
-    <span class="data-label">PITCH</span>
-    <span><span class="data-value" id="stat-pitch">0.0</span><span class="data-unit">°</span></span>
-  </div>
-  <div class="data-row">
-    <span class="data-label">ROLL</span>
-    <span><span class="data-value" id="stat-roll">0.0</span><span class="data-unit">°</span></span>
-  </div>
-  <div class="data-row">
-    <span class="data-label">YAW</span>
-    <span><span class="data-value" id="stat-yaw">0.0</span><span class="data-unit">°</span></span>
-  </div>
-</div>
-
-<!-- RIGHT PANEL -->
-<div id="right-panel" class="side-panel">
-  <div class="panel-title">◈ PROPULSION</div>
-  <div class="data-row">
-    <span class="data-label">THROTTLE</span>
-    <span><span class="data-value" id="stat-thr">0</span><span class="data-unit">%</span></span>
-  </div>
-  <div class="data-row">
-    <span class="data-label">RPM AVG</span>
-    <span><span class="data-value" id="stat-rpm">0</span></span>
-  </div>
-  <div class="battery-wrap">
-    <div class="data-row">
-      <span class="data-label">BATTERY</span>
-      <span><span class="data-value" id="stat-batt">87</span><span class="data-unit">%</span></span>
-    </div>
-    <div class="battery-track"><div id="battery-fill"></div></div>
-  </div>
-  <div class="data-row">
-    <span class="data-label">VOLTAGE</span>
-    <span><span class="data-value" id="stat-volt">25.2</span><span class="data-unit">V</span></span>
-  </div>
-  <div class="data-row">
-    <span class="data-label">CURRENT</span>
-    <span><span class="data-value" id="stat-amp">0.0</span><span class="data-unit">A</span></span>
-  </div>
-  <div class="panel-title" style="margin-top:10px">◈ SIGNAL</div>
-  <div class="data-row">
-    <span class="data-label">RC LINK</span>
-    <span class="data-value" style="color:var(--green);font-size:12px">▇▇▇▇▇</span>
-  </div>
-  <div class="data-row">
-    <span class="data-label">VIDEO</span>
-    <span class="data-value" style="color:var(--blue);font-size:12px">HD·1080</span>
-  </div>
-  <div class="data-row">
-    <span class="data-label">LATENCY</span>
-    <span><span class="data-value" id="stat-lat2" style="color:var(--blue)">42</span><span class="data-unit">ms</span></span>
-  </div>
-</div>
-
-<!-- MINIMAP -->
-<div id="minimap-wrap" style="position:fixed">
-  <canvas id="minimap-canvas" width="140" height="140"></canvas>
-  <div class="minimap-label">MAP · 400m</div>
-</div>
-
-<!-- THROTTLE BAR -->
-<div id="throttle-bar">
-  <div class="thr-label">THR</div>
-  <div class="thr-track"><div id="thr-fill"></div></div>
-</div>
-
-<!-- COMPASS -->
-<div id="compass-wrap">
-  <div id="compass-ring">
-    <div id="compass-needle"></div>
-    <span class="compass-mark" style="top:3px;left:50%;transform:translateX(-50%)">N</span>
-    <span class="compass-mark" style="bottom:3px;left:50%;transform:translateX(-50%)">S</span>
-    <span class="compass-mark" style="left:3px;top:50%;transform:translateY(-50%)">W</span>
-    <span class="compass-mark" style="right:3px;top:50%;transform:translateY(-50%)">E</span>
-  </div>
-  <div id="compass-hdg">HDG 000°</div>
-</div>
-
-<!-- ADI canvas -->
-<div id="adi-wrap">
-  <canvas id="adi-canvas" width="110" height="110"></canvas>
-</div>
-
-<!-- KEYBOARD HINTS -->
-<div id="key-hints">
-  <span>W/S</span> Pitch F/B<br>
-  <span>A/D</span> Roll L/R<br>
-  <span>Q/E</span> Yaw L/R<br>
-  <span>↑/↓</span> Throttle<br>
-  <span>N</span> Day/Night<br>
-  <span>R</span> RTH<br>
-  <span>C</span> Camera
-</div>
-
-<!-- BOTTOM CONTROLS -->
-<div id="bottom-controls">
-  <div class="joystick-section">
-    <div class="joystick-label">THROTTLE · YAW</div>
-    <div class="joystick-outer" id="js-left">
-      <div class="joystick-crosshair"><div class="crosshair-h"></div><div class="crosshair-v"></div></div>
-      <div class="joystick-inner" id="js-left-knob"></div>
-    </div>
-  </div>
-  <div id="center-controls">
-    <div class="btn-row">
-      <button class="ctrl-btn blue" id="btn-night" onclick="toggleNight()">◑ DAY</button>
-      <button class="ctrl-btn" id="btn-mode" onclick="cycleMode()">P-GPS</button>
-      <button class="ctrl-btn amber" id="btn-rth" onclick="triggerRTH()">⌂ RTH</button>
-    </div>
-    <div class="btn-row">
-      <button class="ctrl-btn" id="btn-arm" onclick="toggleArm()">ARM</button>
-      <button class="ctrl-btn amber" id="btn-pause" onclick="togglePause()">⏸ PAUSE</button>
-      <button class="ctrl-btn red" id="btn-stop" onclick="emergencyStop()">✕ STOP</button>
-    </div>
-  </div>
-  <div id="gimbal-section">
-    <div class="gimbal-label">GIMBAL</div>
-    <input type="range" id="gimbal-slider" min="-90" max="30" value="0" oninput="updateGimbal(this.value)">
-    <div class="gimbal-label" id="gimbal-val">0°</div>
-  </div>
-  <div class="joystick-section">
-    <div class="joystick-label">PITCH · ROLL</div>
-    <div class="joystick-outer" id="js-right">
-      <div class="joystick-crosshair"><div class="crosshair-h"></div><div class="crosshair-v"></div></div>
-      <div class="joystick-inner" id="js-right-knob"></div>
-    </div>
-  </div>
-</div>
-
-<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-
-<script>
-// ═══════════════════════════════════════════
-//  CORE SIMULATOR STATE
-// ═══════════════════════════════════════════
-const SIM = {
-  armed: false, paused: false, nightMode: false, rthActive: false,
-  flightMode: 'P-GPS', modes: ['P-GPS','A-ATTI','S-SPORT'], modeIdx: 0,
-  gimbalAngle: 0,
-  pos: { x: 0, y: 2, z: 0 },
-  vel: { x: 0, y: 0, z: 0 },
-  // Smooth velocity for camera — separate from physics vel for buttery smoothness
-  smoothVel: { x: 0, y: 0, z: 0 },
-  rot: { pitch: 0, roll: 0, yaw: 0 },
-  // Target rotations (what we're lerping towards)
-  targetRot: { pitch: 0, roll: 0 },
-  input: { throttle: 0, yaw: 0, pitch: 0, roll: 0 },
-  throttlePct: 0, altitude: 0,
-  hSpeed: 0, vSpeed: 0, heading: 0,
-  battery: 87, voltage: 25.2,
-  homePos: { x: 0, z: 0 },
-  flightTime: 0, totalDist: 0,
-  lastPos: { x: 0, z: 0 },
-  wind: { x: 0.02, z: 0.01, speed: 2.1, dir: 45 },
-  rpmCurrent: 0,
-  trail: [],
-  altHold: 2,
-  _jsThrottleActive: false,
-};
-
-const KEYS = {};
-window.addEventListener('keydown', e => {
-  KEYS[e.key.toLowerCase()] = true;
-  if (e.key === 'n' || e.key === 'N') toggleNight();
-  if (e.key === 'r' || e.key === 'R') triggerRTH();
-  if (e.key === 'c' || e.key === 'C') cycleMode();
-  if (e.key === ' ') { e.preventDefault(); toggleArm(); }
-});
-window.addEventListener('keyup', e => { KEYS[e.key.toLowerCase()] = false; });
-
-// ═══════════════════════════════════════════
-//  THREE.JS SCENE
-// ═══════════════════════════════════════════
-let renderer, scene, camera, droneMesh, rotorMeshes = [], terrainMesh;
-let sunLight, ambientLight, hemiLight, fillLight;
-let skyDome, stars, cityLights, cloudMeshes = [];
-let shadowPlane, waterMesh;
-let clock;
-
-// ── ENHANCED NOISE FUNCTIONS ──
-function noise2D(x, z, freq, amp) {
-  return Math.sin(x * freq + 0.3) * Math.cos(z * freq * 0.9 + 0.7) * amp
-       + Math.sin(x * freq * 2.1 + 1.2) * Math.sin(z * freq * 1.8 + 0.5) * amp * 0.4
-       + Math.cos(x * freq * 4.3 - 0.8) * Math.cos(z * freq * 3.7 + 1.1) * amp * 0.2;
-}
-
-// Multi-octave smooth noise for better terrain
-function smoothNoise(x, z) {
-  let v = 0;
-  v += noise2D(x, z, 2,  22);
-  v += noise2D(x, z, 4,  12);
-  v += noise2D(x, z, 8,   6);
-  v += noise2D(x, z, 16,  2.5);
-  v += noise2D(x, z, 32,  1.0);
-  v += noise2D(x, z, 64,  0.5);
-  return v;
-}
-
-function biomeNoise(x, z) {
-  return Math.sin(x * 0.006 + 1.7) * Math.cos(z * 0.005 - 0.4)
-       + Math.sin(x * 0.011 - 0.6) * Math.sin(z * 0.009 + 1.1) * 0.6;
-}
-
-// Deterministic pseudo-random
-function pseudoRand(x, z) {
-  return ((Math.sin(x * 12.9898 + z * 78.233) * 43758.5453) % 1 + 1) % 1;
-}
-
-function initThree() {
-  renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false, powerPreference: 'high-performance' });
-  renderer.setSize(window.innerWidth, window.innerHeight);
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-  renderer.shadowMap.enabled = true;
-  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-  renderer.outputEncoding = THREE.sRGBEncoding;
-  renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 1.1;
-  // Enable physically-based rendering improvements
-  renderer.physicallyCorrectLights = true;
-  document.getElementById('canvas-container').appendChild(renderer.domElement);
-
-  scene = new THREE.Scene();
-  // Enhanced atmospheric fog — exponential² for more depth
-  scene.fog = new THREE.FogExp2(0x8bbfd4, 0.0018);
-
-  clock = new THREE.Clock();
-  camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 6000);
-  camera.position.set(0, 8, 18);
-
-  // ── ENHANCED LIGHTING SETUP ──
-  // Soft ambient (blue-sky bounce)
-  ambientLight = new THREE.AmbientLight(0xc8d8f0, 0.35);
-  scene.add(ambientLight);
-
-  // Hemisphere: sky top / ground bottom — warm ground, cool sky
-  hemiLight = new THREE.HemisphereLight(0x87ceeb, 0x5a7a3a, 0.65);
-  scene.add(hemiLight);
-
-  // Main sun — warm directional with soft shadows
-  sunLight = new THREE.DirectionalLight(0xfff0d0, 1.4);
-  sunLight.position.set(150, 220, -100);
-  sunLight.castShadow = true;
-  sunLight.shadow.camera.near = 1;
-  sunLight.shadow.camera.far = 1200;
-  sunLight.shadow.camera.left = -200;
-  sunLight.shadow.camera.right = 200;
-  sunLight.shadow.camera.top = 200;
-  sunLight.shadow.camera.bottom = -200;
-  sunLight.shadow.mapSize.width = 4096;   // Enhanced shadow resolution
-  sunLight.shadow.mapSize.height = 4096;
-  sunLight.shadow.bias = -0.0005;
-  sunLight.shadow.normalBias = 0.02;
-  scene.add(sunLight);
-
-  // Subtle blue-purple fill from opposite side (sky reflection)
-  fillLight = new THREE.DirectionalLight(0x8090c0, 0.18);
-  fillLight.position.set(-100, 60, 80);
-  scene.add(fillLight);
-
-  buildSky();
-  buildTerrain();
-  buildWater();
-  buildVegetation();
-  buildDrone();
-  buildCityLights();
-  buildStars();
-  buildClouds();
-  buildHomeMarker();
-  buildObstacleTowers();
-
-  window.addEventListener('resize', onResize);
-}
-
-// ── ENHANCED SKY with sun disc ──
-function buildSky() {
-  const skyGeo = new THREE.SphereGeometry(3000, 32, 16);
-  const skyMat = new THREE.ShaderMaterial({
-    side: THREE.BackSide,
-    uniforms: {
-      topColor:    { value: new THREE.Color(0x0a4a8a) },
-      midColor:    { value: new THREE.Color(0x4a9fd4) },
-      bottomColor: { value: new THREE.Color(0xa8d4f0) },
-      horizColor:  { value: new THREE.Color(0xd4eaf8) },
-      nightTop:    { value: new THREE.Color(0x010310) },
-      nightBottom: { value: new THREE.Color(0x050820) },
-      sunDir:      { value: new THREE.Vector3(0.5, 0.6, -0.3).normalize() },
-      night:       { value: 0.0 }
-    },
-    vertexShader: `
-      varying vec3 vPos;
-      void main() { vPos = normalize(position); gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }
-    `,
-    fragmentShader: `
-      uniform vec3 topColor, midColor, bottomColor, horizColor, nightTop, nightBottom, sunDir;
-      uniform float night;
-      varying vec3 vPos;
-      void main() {
-        float h = clamp(vPos.y, -0.1, 1.0);
-        // Multi-stop sky gradient
-        vec3 dayCol;
-        if (h > 0.3) dayCol = mix(midColor, topColor, (h - 0.3) / 0.7);
-        else if (h > 0.0) dayCol = mix(horizColor, midColor, h / 0.3);
-        else dayCol = mix(bottomColor, horizColor, (h + 0.1) / 0.1);
-        // Sun glow halo
-        float sunAng = max(0.0, dot(vPos, sunDir));
-        float glow = pow(sunAng, 6.0) * 0.5;
-        dayCol = mix(dayCol, vec3(1.0, 0.85, 0.5), glow * (1.0 - night));
-        // Slight reddening at horizon
-        float horizon = pow(1.0 - abs(vPos.y), 4.0) * 0.15;
-        dayCol = mix(dayCol, vec3(0.95, 0.7, 0.5), horizon * (1.0 - night));
-        vec3 ngt = mix(nightBottom, nightTop, clamp(h, 0.0, 1.0));
-        gl_FragColor = vec4(mix(dayCol, ngt, night), 1.0);
-      }
-    `
-  });
-  skyDome = new THREE.Mesh(skyGeo, skyMat);
-  scene.add(skyDome);
-
-  // Sun disc mesh
-  const sunGeo = new THREE.SphereGeometry(18, 16, 16);
-  const sunMat = new THREE.MeshBasicMaterial({ color: 0xfffbe0 });
-  const sunMesh = new THREE.Mesh(sunGeo, sunMat);
-  sunMesh.position.set(450, 660, -300);
-  sunMesh.userData.isSun = true;
-  scene.add(sunMesh);
-}
-
-// ── ENHANCED TERRAIN (4000x4000 — double size) ──
-function buildTerrain() {
-  const W = 512, H = 512;       // grid resolution (optimized for performance)
-  const SIZE = 4000;             // DOUBLE the original 2000
-
-  const geo = new THREE.PlaneGeometry(SIZE, SIZE, W - 1, H - 1);
-  geo.rotateX(-Math.PI / 2);
-
-  const pos = geo.attributes.position;
-  const heights = new Float32Array(W * H);
-
-  for (let i = 0; i < W; i++) {
-    for (let j = 0; j < H; j++) {
-      const x = (i / W) - 0.5, z = (j / H) - 0.5;
-      let h = smoothNoise(x * 2, z * 2);
-      // Keep center flat (landing zone radius ~60m in world space)
-      const dist = Math.sqrt(x * x + z * z);
-      const flattenR = 0.03;  // normalized radius for flat zone
-      const flatten = Math.min(dist / flattenR, 1.0);
-      h *= flatten * flatten;
-      h = Math.max(h, 0);
-      heights[i + j * W] = h;
-    }
-  }
-
-  for (let i = 0; i < pos.count; i++) {
-    pos.setY(i, heights[i] || 0);
-  }
-  pos.needsUpdate = true;
-  geo.computeVertexNormals();
-
-  // Enhanced vertex colors — more biomes, smoother transitions
-  const colors = new Float32Array(pos.count * 3);
-  for (let i = 0; i < pos.count; i++) {
-    const h = pos.getY(i);
-    const wx = pos.getX(i), wz = pos.getZ(i);
-    const biome = biomeNoise(wx, wz);
-    const jitter = pseudoRand(wx * 0.1, wz * 0.1) * 0.035;
-
-    let r, g, b;
-    if (h > 20) {               // Peaks — snow/rock
-      const snowT = Math.min((h - 20) / 8, 1.0);
-      r = 0.65 + snowT * 0.30; g = 0.62 + snowT * 0.33; b = 0.57 + snowT * 0.40;
-    } else if (h > 14) {        // High rock — grey-brown
-      r = 0.52; g = 0.47; b = 0.38;
-    } else if (h > 9) {         // Transition rock/grass
-      const t = (h - 9) / 5;
-      r = 0.30 + t*0.22; g = 0.38 + t*0.09; b = 0.20 + t*0.18;
-    } else if (biome > 0.65) {  // Dense forest
-      r = 0.12; g = 0.28; b = 0.10;
-    } else if (biome > 0.25) {  // Lush meadow
-      r = 0.22; g = 0.44; b = 0.18;
-    } else if (biome > -0.15) { // Light grass/shrubs
-      r = 0.35; g = 0.49; b = 0.24;
-    } else if (biome > -0.55) { // Rocky scrub
-      r = 0.44; g = 0.40; b = 0.31;
-    } else {                    // Sandy/arid
-      r = 0.62; g = 0.52; b = 0.36;
-    }
-    // Slight shadow in valleys (ambient occlusion approximation)
-    const aoFactor = Math.max(0.7, Math.min(1.0, h / 8 + 0.7));
-    colors[i * 3]     = Math.max(0, Math.min(1, (r + jitter) * aoFactor));
-    colors[i * 3 + 1] = Math.max(0, Math.min(1, (g + jitter) * aoFactor));
-    colors[i * 3 + 2] = Math.max(0, Math.min(1, (b + jitter) * aoFactor));
-  }
-  geo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
-
-  // MeshStandardMaterial — physically-based for better realism
-  const mat = new THREE.MeshStandardMaterial({
-    vertexColors: true,
-    roughness: 0.88,
-    metalness: 0.0,
-  });
-
-  terrainMesh = new THREE.Mesh(geo, mat);
-  terrainMesh.receiveShadow = true;
-  terrainMesh.castShadow = false;
-  scene.add(terrainMesh);
-
-  terrainMesh.userData.heights = heights;
-  terrainMesh.userData.W = W;
-  terrainMesh.userData.SIZE = SIZE;
-}
-
-// ── WATER ──
-function buildWater() {
-  // A few low-lying water bodies scattered across the larger terrain
-  const waterPositions = [
-    { x: 120, z: -180, r: 45 },
-    { x: -220, z: 140, r: 60 },
-    { x: 350, z: 200, r: 35 },
-    { x: -380, z: -300, r: 50 },
-  ];
-  waterPositions.forEach(wp => {
-    const wgeo = new THREE.CircleGeometry(wp.r, 32);
-    const wmat = new THREE.MeshStandardMaterial({
-      color: 0x2a6a9a,
-      roughness: 0.05,
-      metalness: 0.3,
-      transparent: true,
-      opacity: 0.82,
-    });
-    const w = new THREE.Mesh(wgeo, wmat);
-    w.rotation.x = -Math.PI / 2;
-    const gh = getTerrainHeight(wp.x, wp.z);
-    w.position.set(wp.x, gh + 0.1, wp.z);
-    w.userData.isWater = true;
-    w.userData.baseY = gh + 0.1;
-    scene.add(w);
-    if (!waterMesh) waterMesh = w; // reference first one for animation
-  });
-}
-
-// ── VEGETATION — trees and shrubs ──
-function buildVegetation() {
-  // Instanced low-poly trees for performance
-  const TREE_COUNT = 400;
-  const SHRUB_COUNT = 300;
-
-  // Tree trunk (instanced)
-  const trunkGeo = new THREE.CylinderGeometry(0.18, 0.28, 2.8, 6);
-  const trunkMat = new THREE.MeshStandardMaterial({ color: 0x3d2a18, roughness: 0.95 });
-  const trunkMesh = new THREE.InstancedMesh(trunkGeo, trunkMat, TREE_COUNT);
-  trunkMesh.castShadow = true;
-  trunkMesh.receiveShadow = true;
-
-  // Tree foliage top (instanced cone)
-  const foliageGeo = new THREE.ConeGeometry(2.2, 5.5, 7);
-  const foliageMat = new THREE.MeshStandardMaterial({ color: 0x1a4a18, roughness: 0.9 });
-  const foliageMesh = new THREE.InstancedMesh(foliageGeo, foliageMat, TREE_COUNT);
-  foliageMesh.castShadow = true;
-
-  // Shrub (instanced sphere)
-  const shrubGeo = new THREE.SphereGeometry(1.0, 6, 5);
-  const shrubMat = new THREE.MeshStandardMaterial({ color: 0x2d6020, roughness: 0.92 });
-  const shrubMesh = new THREE.InstancedMesh(shrubGeo, shrubMat, SHRUB_COUNT);
-  shrubMesh.castShadow = true;
-
-  const dummy = new THREE.Object3D();
-  const SIZE = 4000;
-
-  let ti = 0;
-  const placedTrees = [];
-  let attempts = 0;
-  while (ti < TREE_COUNT && attempts < TREE_COUNT * 10) {
-    attempts++;
-    const px = (pseudoRand(ti * 3.1, attempts * 0.7) - 0.5) * SIZE * 0.88;
-    const pz = (pseudoRand(ti * 1.7 + 100, attempts * 1.3) - 0.5) * SIZE * 0.88;
-    const dist0 = Math.sqrt(px*px + pz*pz);
-    if (dist0 < 60) continue; // keep landing zone clear
-    const h = getTerrainHeight(px, pz);
-    if (h < 0.5 || h > 14) continue; // only on low-mid slopes
-    const biome = biomeNoise(px, pz);
-    if (biome < 0.0) continue; // only forest/meadow biomes
-    // Vary tree height
-    const scale = 0.7 + pseudoRand(px * 0.01, pz * 0.01) * 0.6;
-
-    // Trunk
-    dummy.position.set(px, h + 1.4 * scale, pz);
-    dummy.scale.set(scale, scale, scale);
-    dummy.rotation.y = pseudoRand(px, pz) * Math.PI * 2;
-    dummy.updateMatrix();
-    trunkMesh.setMatrixAt(ti, dummy.matrix);
-    // Foliage
-    dummy.position.set(px, h + 4.5 * scale, pz);
-    dummy.updateMatrix();
-    foliageMesh.setMatrixAt(ti, dummy.matrix);
-    placedTrees.push({x:px, z:pz});
-    ti++;
-  }
-  // Pad remaining slots off-screen
-  for (let k = ti; k < TREE_COUNT; k++) {
-    dummy.position.set(9999, 0, 9999); dummy.scale.set(0.001,0.001,0.001); dummy.updateMatrix();
-    trunkMesh.setMatrixAt(k, dummy.matrix);
-    foliageMesh.setMatrixAt(k, dummy.matrix);
-  }
-  trunkMesh.instanceMatrix.needsUpdate = true;
-  foliageMesh.instanceMatrix.needsUpdate = true;
-  scene.add(trunkMesh);
-  scene.add(foliageMesh);
-
-  let si = 0;
-  attempts = 0;
-  while (si < SHRUB_COUNT && attempts < SHRUB_COUNT * 8) {
-    attempts++;
-    const px = (pseudoRand(si * 5.3 + 200, attempts * 2.1) - 0.5) * SIZE * 0.85;
-    const pz = (pseudoRand(si * 2.9 + 300, attempts * 0.9) - 0.5) * SIZE * 0.85;
-    const dist0 = Math.sqrt(px*px + pz*pz);
-    if (dist0 < 40) continue;
-    const h = getTerrainHeight(px, pz);
-    if (h < 0.3 || h > 12) continue;
-    const scale = 0.5 + pseudoRand(px * 0.02, pz * 0.02) * 0.7;
-    dummy.position.set(px, h + 1.0 * scale, pz);
-    dummy.scale.set(scale, scale * 0.75, scale);
-    dummy.rotation.y = pseudoRand(px + 1, pz + 1) * Math.PI * 2;
-    dummy.updateMatrix();
-    shrubMesh.setMatrixAt(si, dummy.matrix);
-    si++;
-  }
-  for (let k = si; k < SHRUB_COUNT; k++) {
-    dummy.position.set(9999,0,9999); dummy.scale.set(0.001,0.001,0.001); dummy.updateMatrix();
-    shrubMesh.setMatrixAt(k, dummy.matrix);
-  }
-  shrubMesh.instanceMatrix.needsUpdate = true;
-  scene.add(shrubMesh);
-}
-
-function getTerrainHeight(x, z) {
-  if (!terrainMesh) return 0;
-  const { heights, W, SIZE } = terrainMesh.userData;
-  const u = (x / SIZE + 0.5) * (W - 1);
-  const v = (z / SIZE + 0.5) * (W - 1);
-  const iu = Math.min(Math.max(Math.floor(u), 0), W - 2);
-  const iv = Math.min(Math.max(Math.floor(v), 0), W - 2);
-  const fu = u - iu, fv = v - iv;
-  const h00 = heights[iu + iv * W] || 0;
-  const h10 = heights[(iu + 1) + iv * W] || 0;
-  const h01 = heights[iu + (iv + 1) * W] || 0;
-  const h11 = heights[(iu + 1) + (iv + 1) * W] || 0;
-  return h00 * (1-fu)*(1-fv) + h10 * fu*(1-fv) + h01 * (1-fu)*fv + h11 * fu*fv;
-}
-
-// ── DRONE (identical high-quality model) ──
-function buildDrone() {
-  const group = new THREE.Group();
-  const S = 2.2;
-  const COL_TOP    = 0xcdcfd2;
-  const COL_SIDE   = 0x999b9e;
-  const COL_DARK   = 0x232323;
-  const COL_ARM    = 0xb6b8bb;
-  const COL_ACCENT = 0xff7a1a;
-  const COL_LENS   = 0x33405a;
-
-  // Body
-  const topGeo = new THREE.BoxGeometry(0.62*S, 0.16*S, 0.92*S);
-  const topMat = new THREE.MeshStandardMaterial({ color: COL_TOP, roughness:0.25, metalness:0.15 });
-  const top = new THREE.Mesh(topGeo, topMat);
-  top.position.set(0, 0.08*S, -0.04*S);
-  top.castShadow = true;
-  group.add(top);
-
-  const bodyGeo = new THREE.BoxGeometry(0.46*S, 0.16*S, 0.74*S);
-  const bodyMat = new THREE.MeshStandardMaterial({ color: COL_SIDE, roughness:0.3, metalness:0.1 });
-  const body = new THREE.Mesh(bodyGeo, bodyMat);
-  body.position.set(0, -0.06*S, -0.02*S);
-  body.castShadow = true;
-  group.add(body);
-
-  const noseGeo = new THREE.BoxGeometry(0.34*S, 0.14*S, 0.18*S);
-  const noseMat = new THREE.MeshStandardMaterial({ color: COL_TOP, roughness:0.25, metalness:0.12 });
-  const nose = new THREE.Mesh(noseGeo, noseMat);
-  nose.position.set(0, 0.05*S, -0.48*S);
-  group.add(nose);
-
-  for (let i = -1; i <= 1; i += 2) {
-    const ventGeo = new THREE.BoxGeometry(0.13*S, 0.02*S, 0.22*S);
-    const ventMat = new THREE.MeshStandardMaterial({ color: COL_DARK, roughness:0.5 });
-    const vent = new THREE.Mesh(ventGeo, ventMat);
-    vent.position.set(i*0.14*S, 0.165*S, 0.22*S);
-    group.add(vent);
-  }
-
-  const eyeGeo = new THREE.CylinderGeometry(0.045*S, 0.045*S, 0.05*S, 12);
-  const eyeMat = new THREE.MeshStandardMaterial({ color: COL_DARK, roughness:0.05, metalness:0.8 });
-  [-0.15, 0.15].forEach(ex => {
-    const eye = new THREE.Mesh(eyeGeo, eyeMat);
-    eye.rotation.x = Math.PI/2;
-    eye.position.set(ex*S, 0.04*S, -0.55*S);
-    group.add(eye);
-  });
-
-  const topSensorGeo = new THREE.CylinderGeometry(0.04*S, 0.04*S, 0.03*S, 10);
-  const topSensor = new THREE.Mesh(topSensorGeo, eyeMat);
-  topSensor.position.set(0, 0.165*S, -0.3*S);
-  group.add(topSensor);
-
-  const armPositions = [
-    { x:  1.0, z:  0.85, front: false, cx:  0.28, cz:  0.40 },
-    { x: -1.0, z:  0.85, front: false, cx: -0.28, cz:  0.40 },
-    { x:  1.0, z: -0.85, front: true,  cx:  0.28, cz: -0.40 },
-    { x: -1.0, z: -0.85, front: true,  cx: -0.28, cz: -0.40 },
-  ];
-
-  armPositions.forEach(ap => {
-    const startX = ap.cx*S, startZ = ap.cz*S;
-    const endX = ap.x*S, endZ = ap.z*S;
-    const dx = endX-startX, dz = endZ-startZ;
-    const len = Math.sqrt(dx*dx + dz*dz);
-
-    const armGroup = new THREE.Group();
-    armGroup.position.set(startX, 0, startZ);
-    armGroup.rotation.y = Math.atan2(dx, dz);
-
-    const armGeo = new THREE.CylinderGeometry(0.05*S, 0.04*S, len, 8);
-    const armMat = new THREE.MeshStandardMaterial({ color: COL_ARM, roughness:0.35, metalness:0.1 });
-    const arm = new THREE.Mesh(armGeo, armMat);
-    arm.rotation.x = Math.PI/2;
-    arm.position.set(0, 0, len/2);
-    arm.castShadow = true;
-    armGroup.add(arm);
-    group.add(armGroup);
-
-    const joinGeo = new THREE.CylinderGeometry(0.09*S, 0.09*S, 0.15*S, 8);
-    const joinMat = new THREE.MeshStandardMaterial({ color: COL_SIDE, roughness:0.3 });
-    const join = new THREE.Mesh(joinGeo, joinMat);
-    join.position.set(startX, 0, startZ);
-    group.add(join);
-
-    const motorGeo = new THREE.CylinderGeometry(0.155*S, 0.14*S, 0.12*S, 12);
-    const motorMat = new THREE.MeshStandardMaterial({ color: COL_DARK, roughness:0.1, metalness:0.9 });
-    const motor = new THREE.Mesh(motorGeo, motorMat);
-    motor.position.set(ap.x*S, 0.06*S, ap.z*S);
-    motor.castShadow = true;
-    group.add(motor);
-
-    const topRingGeo = new THREE.CylinderGeometry(0.14*S, 0.14*S, 0.03*S, 12);
-    const topRingMat = new THREE.MeshStandardMaterial({ color: 0x3a3a3a, roughness:0.05, metalness:1.0 });
-    const topRing = new THREE.Mesh(topRingGeo, topRingMat);
-    topRing.position.set(ap.x*S, 0.135*S, ap.z*S);
-    group.add(topRing);
-
-    const legGeo = new THREE.CylinderGeometry(0.025*S, 0.02*S, 0.22*S, 6);
-    const legMat = new THREE.MeshStandardMaterial({ color: COL_SIDE, roughness:0.4 });
-    const leg = new THREE.Mesh(legGeo, legMat);
-    leg.position.set(ap.x*S, -0.06*S, ap.z*S);
-    leg.rotation.x = ap.front ? -0.15 : 0.15;
-    group.add(leg);
-
-    const footGeo = new THREE.SphereGeometry(0.035*S, 8, 8);
-    const footMat = new THREE.MeshStandardMaterial({ color: COL_ACCENT, roughness:0.5 });
-    const foot = new THREE.Mesh(footGeo, footMat);
-    foot.position.set(ap.x*S, -0.165*S, ap.z*S + (ap.front ? -0.03 : 0.03)*S);
-    group.add(foot);
-
-    [0, Math.PI/2].forEach((rotOff, bladeIdx) => {
-      const bladeGroup = new THREE.Group();
-      const bladeMainGeo = new THREE.BoxGeometry(0.62*S, 0.022*S, 0.095*S);
-      const bladeMainMat = new THREE.MeshStandardMaterial({ color: COL_DARK, roughness:0.4, transparent:true, opacity:0.92 });
-      const bladeMain = new THREE.Mesh(bladeMainGeo, bladeMainMat);
-      bladeGroup.add(bladeMain);
-
-      const tipGeo = new THREE.BoxGeometry(0.1*S, 0.022*S, 0.09*S);
-      const tipMat = new THREE.MeshStandardMaterial({ color: COL_ACCENT, roughness:0.4 });
-      const tip1 = new THREE.Mesh(tipGeo, tipMat);
-      tip1.position.set(0.31*S, 0, 0);
-      bladeGroup.add(tip1);
-      const tip2 = new THREE.Mesh(tipGeo, tipMat);
-      tip2.position.set(-0.31*S, 0, 0);
-      bladeGroup.add(tip2);
-
-      bladeGroup.rotation.y = rotOff;
-      bladeGroup.position.set(ap.x*S, 0.165*S, ap.z*S);
-      group.add(bladeGroup);
-      rotorMeshes.push(bladeGroup);
-    });
-
-    const discGeo = new THREE.CircleGeometry(0.42*S, 20);
-    const discMat = new THREE.MeshBasicMaterial({ color: 0x2a2a2a, transparent:true, opacity:0.0, side:THREE.DoubleSide });
-    const disc = new THREE.Mesh(discGeo, discMat);
-    disc.rotation.x = -Math.PI/2;
-    disc.position.set(ap.x*S, 0.17*S, ap.z*S);
-    group.add(disc);
-    rotorMeshes[rotorMeshes.length-1].userData.disc = disc;
-    rotorMeshes[rotorMeshes.length-2].userData.disc = disc;
-  });
-
-  // Navigation LEDs
-  const ledGeo = new THREE.SphereGeometry(0.05*S, 8, 8);
-  const ledDefs = [
-    [ 0.95*S, -0.04*S, -0.85*S, 0x22ff44],
-    [-0.95*S, -0.04*S, -0.85*S, 0xff2222],
-    [ 0.95*S, -0.04*S,  0.85*S, 0xffffff],
-    [-0.95*S, -0.04*S,  0.85*S, 0xffffff],
-  ];
-  ledDefs.forEach(([x,y,z,c]) => {
-    const led = new THREE.Mesh(ledGeo, new THREE.MeshBasicMaterial({ color: c }));
-    led.position.set(x,y,z);
-    const pl = new THREE.PointLight(c, 0.5, 2.5);
-    pl.position.set(x,y,z);
-    group.add(led, pl);
-  });
-
-  // Bottom sensor
-  const oaGeo = new THREE.BoxGeometry(0.18*S, 0.06*S, 0.12*S);
-  const oaMat = new THREE.MeshStandardMaterial({ color: COL_DARK, roughness:0.05, metalness:0.8 });
-  const oaSensor = new THREE.Mesh(oaGeo, oaMat);
-  oaSensor.position.set(0, -0.14*S, 0.05*S);
-  group.add(oaSensor);
-
-  // Gimbal/camera
-  const gimbalGroup = new THREE.Group();
-  gimbalGroup.position.set(0, -0.16*S, -0.42*S);
-
-  const gimbalRingGeo = new THREE.TorusGeometry(0.1*S, 0.02*S, 8, 16);
-  const gimbalMat = new THREE.MeshStandardMaterial({ color: 0x2c2c2c, roughness:0.1, metalness:0.9 });
-  const gimbalRing = new THREE.Mesh(gimbalRingGeo, gimbalMat);
-  gimbalRing.rotation.y = Math.PI/2;
-  gimbalGroup.add(gimbalRing);
-
-  const camBodyGeo = new THREE.BoxGeometry(0.2*S, 0.15*S, 0.16*S);
-  const camBodyMat = new THREE.MeshStandardMaterial({ color: 0x161616, roughness:0.15, metalness:0.5 });
-  const camBody = new THREE.Mesh(camBodyGeo, camBodyMat);
-  gimbalGroup.add(camBody);
-
-  const accentRingGeo = new THREE.TorusGeometry(0.062*S, 0.008*S, 6, 16);
-  const accentRingMat = new THREE.MeshStandardMaterial({ color: COL_ACCENT, roughness:0.3 });
-  const accentRing = new THREE.Mesh(accentRingGeo, accentRingMat);
-  accentRing.position.set(0, 0, -0.1*S);
-  gimbalGroup.add(accentRing);
-
-  const lensGeo = new THREE.CylinderGeometry(0.06*S, 0.065*S, 0.08*S, 16);
-  const lensMat = new THREE.MeshStandardMaterial({ color: 0x080808, roughness:0.0, metalness:0.5 });
-  const lens = new THREE.Mesh(lensGeo, lensMat);
-  lens.rotation.x = Math.PI/2;
-  lens.position.set(0, 0, -0.1*S);
-  gimbalGroup.add(lens);
-
-  const glassGeo = new THREE.CircleGeometry(0.05*S, 16);
-  const glassMat = new THREE.MeshStandardMaterial({ color: COL_LENS, roughness:0.0, metalness:0.1, transparent:true, opacity:0.85 });
-  const glass = new THREE.Mesh(glassGeo, glassMat);
-  glass.rotation.y = Math.PI;
-  glass.position.set(0, 0, -0.142*S);
-  gimbalGroup.add(glass);
-
-  group.add(gimbalGroup);
-  group.userData.gimbalGroup = gimbalGroup;
-  droneMesh = group;
-
-  const sGeo = new THREE.CircleGeometry(1.2, 20);
-  const sMat = new THREE.MeshBasicMaterial({ color: 0x000000, transparent:true, opacity:0.4 });
-  shadowPlane = new THREE.Mesh(sGeo, sMat);
-  shadowPlane.rotation.x = -Math.PI/2;
-  scene.add(shadowPlane);
-  scene.add(droneMesh);
-}
-
-// ── VOLUMETRIC CLOUDS ──
-function buildClouds() {
-  const cloudDefs = [
-    { x:  80, y: 120, z: -150, scaleX: 3.0, scaleZ: 1.2 },
-    { x: -160, y: 100, z: 80, scaleX: 2.5, scaleZ: 1.5 },
-    { x:  250, y: 140, z: 300, scaleX: 4.0, scaleZ: 1.0 },
-    { x: -300, y: 115, z: -250, scaleX: 3.5, scaleZ: 1.3 },
-    { x:  380, y: 130, z: 100, scaleX: 2.8, scaleZ: 1.1 },
-    { x: -100, y: 160, z: 400, scaleX: 5.0, scaleZ: 0.9 },
-    { x:  500, y: 110, z: -180, scaleX: 3.2, scaleZ: 1.4 },
-    { x: -450, y: 145, z: 350, scaleX: 4.2, scaleZ: 1.2 },
-  ];
-
-  cloudDefs.forEach(cd => {
-    const cloudGroup = new THREE.Group();
-    // Each cloud = several overlapping spheres
-    const numPuffs = 5 + Math.floor(pseudoRand(cd.x, cd.z) * 4);
-    for (let p = 0; p < numPuffs; p++) {
-      const puffR = 15 + pseudoRand(cd.x * 0.1 + p, cd.z * 0.1) * 20;
-      const puffGeo = new THREE.SphereGeometry(puffR, 8, 6);
-      const puffMat = new THREE.MeshStandardMaterial({
-        color: 0xffffff,
-        roughness: 1.0,
-        metalness: 0.0,
-        transparent: true,
-        opacity: 0.55 + pseudoRand(cd.x + p * 10, cd.z) * 0.25,
-      });
-      const puff = new THREE.Mesh(puffGeo, puffMat);
-      puff.position.set(
-        (pseudoRand(p * 3, cd.x) - 0.5) * 60,
-        (pseudoRand(p * 3, cd.z) - 0.5) * 10,
-        (pseudoRand(p * 3, cd.x * 0.1) - 0.5) * 30
-      );
-      cloudGroup.add(puff);
-    }
-    cloudGroup.position.set(cd.x, cd.y, cd.z);
-    cloudGroup.scale.set(cd.scaleX, 0.4, cd.scaleZ);
-    cloudGroup.userData.driftSpeed = 0.5 + pseudoRand(cd.x, cd.z) * 1.5;
-    cloudGroup.userData.baseX = cd.x;
-    scene.add(cloudGroup);
-    cloudMeshes.push(cloudGroup);
-  });
-}
-
-// ── CITY LIGHTS (night) ──
-function buildCityLights() {
-  cityLights = new THREE.Group();
-  cityLights.visible = false;
-
-  const geo = new THREE.SphereGeometry(0.4, 4, 4);
-  const colors = [0xffaa44, 0xffffff, 0x4488ff, 0xff6644, 0xffee99];
-
-  for (let i = 0; i < 400; i++) {  // More lights for bigger area
-    const x = (Math.random() - 0.5) * 1400;
-    const z = (Math.random() - 0.5) * 1400;
-    const dist = Math.sqrt(x*x + z*z);
-    if (dist < 80) continue;
-    const h = getTerrainHeight(x, z);
-    const mat = new THREE.MeshBasicMaterial({ color: colors[Math.floor(Math.random() * colors.length)] });
-    const m = new THREE.Mesh(geo, mat);
-    m.position.set(x, h + 0.5, z);
-    cityLights.add(m);
-    if (i % 8 === 0) {
-      const pl = new THREE.PointLight(colors[Math.floor(Math.random() * colors.length)], 0.3, 8);
-      pl.position.copy(m.position);
-      cityLights.add(pl);
-    }
-  }
-  scene.add(cityLights);
-}
-
-// ── STARS ──
-function buildStars() {
-  const geo = new THREE.BufferGeometry();
-  const verts = [];
-  for (let i = 0; i < 5000; i++) {
-    const r = 2500;
-    const theta = Math.random() * Math.PI * 2;
-    const phi = Math.random() * Math.PI * 0.5;
-    verts.push(r*Math.sin(phi)*Math.cos(theta), r*Math.cos(phi)+100, r*Math.sin(phi)*Math.sin(theta));
-  }
-  geo.setAttribute('position', new THREE.Float32BufferAttribute(verts, 3));
-  stars = new THREE.Points(geo, new THREE.PointsMaterial({ color: 0xffffff, size: 2.0, transparent:true, opacity:0 }));
-  scene.add(stars);
-}
-
-// ── HOME MARKER ──
-function buildHomeMarker() {
-  const geo = new THREE.ConeGeometry(0.3, 0.8, 4);
-  const mat = new THREE.MeshBasicMaterial({ color: 0x00ff41 });
-  const marker = new THREE.Mesh(geo, mat);
-  marker.position.set(0, 0.4, 0);
-  marker.rotation.y = Math.PI/4;
-  scene.add(marker);
-
-  const ringGeo = new THREE.RingGeometry(0.8, 1.0, 16);
-  const ringMat = new THREE.MeshBasicMaterial({ color: 0x00ff41, side:THREE.DoubleSide, transparent:true, opacity:0.6 });
-  const ring = new THREE.Mesh(ringGeo, ringMat);
-  ring.rotation.x = -Math.PI/2;
-  ring.position.y = 0.05;
-  scene.add(ring);
-}
-
-// ── OBSTACLE TOWERS — more and spread further for bigger scenario ──
-const TOWERS = [];
-
-function buildObstacleTowers() {
-  const towerDefs = [
-    // Inner ring (near original positions)
-    { x:  70, z:  50, h: 22, r: 1.2, style: 'lattice' },
-    { x: -84, z:  36, h: 30, r: 1.5, style: 'solid'   },
-    { x:  40, z: -76, h: 18, r: 1.0, style: 'lattice' },
-    { x: -50, z: -60, h: 26, r: 1.3, style: 'solid'   },
-    { x: 110, z: -24, h: 35, r: 1.8, style: 'lattice' },
-    { x:-120, z:  80, h: 20, r: 1.1, style: 'solid'   },
-    { x:  20, z: 104, h: 28, r: 1.4, style: 'lattice' },
-    // Outer ring (new for double-size scenario)
-    { x: 200, z:  80, h: 32, r: 1.6, style: 'solid'   },
-    { x:-180, z: 160, h: 40, r: 2.0, style: 'lattice' },
-    { x: 300, z:-120, h: 28, r: 1.5, style: 'solid'   },
-    { x:-260, z:-200, h: 36, r: 1.7, style: 'lattice' },
-    { x:  90, z: 280, h: 24, r: 1.3, style: 'solid'   },
-    { x:-340, z:  50, h: 42, r: 2.2, style: 'lattice' },
-    { x: 380, z: 220, h: 30, r: 1.4, style: 'solid'   },
-    { x:-150, z:-320, h: 26, r: 1.2, style: 'lattice' },
-    { x: 450, z: -60, h: 48, r: 2.5, style: 'solid'   },
-    { x:-400, z: 300, h: 34, r: 1.8, style: 'lattice' },
-  ];
-
-  towerDefs.forEach(td => {
-    const group = new THREE.Group();
-    const gh = getTerrainHeight(td.x, td.z);
-
-    if (td.style === 'solid') {
-      const tGeo = new THREE.BoxGeometry(td.r*2.5, td.h, td.r*2.5);
-      const tMat = new THREE.MeshStandardMaterial({ color: 0x555566, roughness:0.7, metalness:0.2 });
-      const tower = new THREE.Mesh(tGeo, tMat);
-      tower.position.set(0, td.h/2, 0);
-      tower.castShadow = true; tower.receiveShadow = true;
-      group.add(tower);
-
-      const winMat = new THREE.MeshBasicMaterial({ color: 0xffffaa, transparent:true, opacity:0.6 });
-      for (let f = 0; f < 4; f++) {
-        for (let w = 2; w < Math.floor(td.h/3); w++) {
-          const winGeo = new THREE.BoxGeometry(0.3, 0.5, 0.05);
-          const win = new THREE.Mesh(winGeo, winMat);
-          const angle = (f/4)*Math.PI*2;
-          win.position.set(Math.cos(angle)*(td.r*1.26), w*3, Math.sin(angle)*(td.r*1.26));
-          win.rotation.y = angle;
-          group.add(win);
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Inducción de Ingreso - Planta Huachipato</title>
+  
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
+  <script>
+    tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Inter', 'sans-serif'] },
+                    colors: {
+                        huachipato: {
+                            blue: '#0033a0',
+                            dark: '#001b5e',
+                            red: '#e3000f',
+                            gray: '#f3f4f6',
+                            text: '#374151'
+                        }
+                    }
+                }
+            }
         }
-      }
-      const antGeo = new THREE.CylinderGeometry(0.06, 0.06, td.h*0.25, 6);
-      const antMat = new THREE.MeshStandardMaterial({ color: 0x888888, roughness:0.4 });
-      const ant = new THREE.Mesh(antGeo, antMat);
-      ant.position.set(0, td.h + td.h*0.125, 0);
-      group.add(ant);
-    } else {
-      const colMat = new THREE.MeshStandardMaterial({ color: 0xcc6600, roughness:0.6, metalness:0.3 });
-      const cols = [[td.r,0,td.r],[-td.r,0,td.r],[td.r,0,-td.r],[-td.r,0,-td.r]];
-      cols.forEach(([cx,,cz]) => {
-        const colGeo = new THREE.CylinderGeometry(0.12, 0.18, td.h, 6);
-        const col = new THREE.Mesh(colGeo, colMat);
-        col.position.set(cx, td.h/2, cz);
-        col.castShadow = true;
-        group.add(col);
-      });
-      const crossMat = new THREE.MeshStandardMaterial({ color: 0xaa5500, roughness:0.6 });
-      for (let y = 2; y < td.h; y += 4) {
-        [[td.r,td.r,-td.r,td.r],[td.r,-td.r,-td.r,-td.r],[td.r,td.r,td.r,-td.r],[-td.r,td.r,-td.r,-td.r]].forEach(([x1,z1,x2,z2]) => {
-          const len = Math.sqrt((x2-x1)**2 + (z2-z1)**2);
-          const cGeo = new THREE.CylinderGeometry(0.05, 0.05, len, 4);
-          const c = new THREE.Mesh(cGeo, crossMat);
-          c.rotation.z = Math.PI/2;
-          c.rotation.y = Math.atan2(z2-z1, x2-x1);
-          c.position.set((x1+x2)/2, y, (z1+z2)/2);
-          group.add(c);
-        });
-      }
-      const platGeo = new THREE.CylinderGeometry(td.r*1.6, td.r*1.4, 0.3, 8);
-      const platMat = new THREE.MeshStandardMaterial({ color: 0x444444, roughness:0.5 });
-      const plat = new THREE.Mesh(platGeo, platMat);
-      plat.position.set(0, td.h+0.15, 0);
-      group.add(plat);
+  </script>
+  <style>
+    .fade-in { animation: fadeIn 0.4s ease-in-out; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    
+    body { 
+        position: relative; 
+        font-family: 'Inter', sans-serif; 
+        background-color: #f3f4f6;
     }
 
-    const beaconGeo = new THREE.SphereGeometry(0.18, 8, 8);
-    const beaconMat = new THREE.MeshBasicMaterial({ color: 0xff2200 });
-    const beacon = new THREE.Mesh(beaconGeo, beaconMat);
-    beacon.position.set(0, td.h+0.5, 0);
-    group.add(beacon);
-    const beaconLight = new THREE.PointLight(0xff2200, 1.5, 12);
-    beaconLight.position.set(0, td.h+0.5, 0);
-    group.add(beaconLight);
-    beacon.userData.beaconLight = beaconLight;
-    beacon.userData.isBeacon = true;
-
-    group.position.set(td.x, gh, td.z);
-    scene.add(group);
-    TOWERS.push({ x: td.x, z: td.z, h: gh+td.h, r: td.r+2 });
-  });
-}
-
-// ═══════════════════════════════════════════
-//  PHYSICS UPDATE — enhanced smoothness
-// ═══════════════════════════════════════════
-const GRAVITY = 9.81;
-const DRAG = 0.972;        // Slightly higher drag = more fluid deceleration
-const ROT_DRAG = 0.85;
-
-// Exponential moving average helper
-function ema(current, target, alpha) { return current + (target - current) * alpha; }
-
-function updatePhysics(dt) {
-  if (!SIM.armed || SIM.paused) return;
-
-  const modes = {
-    'P-GPS':   { thr: 1.2, rot: 1.0, sp: 38 },
-    'A-ATTI':  { thr: 1.4, rot: 1.2, sp: 60 },
-    'S-SPORT': { thr: 2.8, rot: 1.5, sp: 130 }
-  };
-  const mc = modes[SIM.flightMode] || modes['P-GPS'];
-
-  const thrKeyUp   = KEYS['arrowup'];
-  const thrKeyDown = KEYS['arrowdown'];
-  const joystickThrottleActive = SIM._jsThrottleActive;
-
-  // Smooth throttle input with acceleration ramping
-  if (thrKeyUp)   SIM.input.throttle = Math.min(SIM.input.throttle + 0.018, 1);
-  if (thrKeyDown) SIM.input.throttle = Math.max(SIM.input.throttle - 0.018, -0.5);
-
-  const groundH0 = getTerrainHeight(SIM.pos.x, SIM.pos.z);
-  const inAir = SIM.pos.y > groundH0 + 0.5;
-  const hasThrottleInput = thrKeyUp || thrKeyDown || joystickThrottleActive;
-
-  if (!hasThrottleInput && inAir && SIM.flightMode !== 'A-ATTI') {
-    const altError = SIM.altHold - SIM.pos.y;
-    const correction = altError * 4.0 - SIM.vel.y * 2.5;
-    const holdThrust = GRAVITY + correction;
-    SIM.vel.y += (holdThrust - GRAVITY) * dt;
-    SIM.vel.y *= 0.97;
-    SIM.throttlePct = 50 + altError * 2;
-  } else {
-    if (!hasThrottleInput) SIM.altHold = SIM.pos.y;
-    const thrNorm2 = Math.max(SIM.input.throttle, 0);
-    const thrustUp = thrNorm2 * GRAVITY * 1.9 * mc.thr;
-    SIM.vel.y += (thrustUp - GRAVITY) * dt;
-    SIM.vel.y *= 0.96;
-    SIM.throttlePct = thrNorm2 * 100;
-    SIM.altHold = SIM.pos.y;
-  }
-
-  if (KEYS['e']) SIM.input.yaw = -0.9;
-  else if (KEYS['q']) SIM.input.yaw = 0.9;
-  else SIM.input.yaw *= 0.82;
-
-  // Smooth pitch/roll input with soft ramp
-  if (KEYS['w']) SIM.input.pitch = ema(SIM.input.pitch, -0.85 * mc.rot, 0.15);
-  else if (KEYS['s']) SIM.input.pitch = ema(SIM.input.pitch, 0.85 * mc.rot, 0.15);
-  else SIM.input.pitch *= 0.80;
-
-  if (KEYS['a']) SIM.input.roll = ema(SIM.input.roll, 0.85 * mc.rot, 0.15);
-  else if (KEYS['d']) SIM.input.roll = ema(SIM.input.roll, -0.85 * mc.rot, 0.15);
-  else SIM.input.roll *= 0.80;
-
-  const thrNorm = Math.max(SIM.input.throttle, 0);
-
-  // Smooth attitude with flutter-free interpolation — lower alpha = more gradual tilt
-  const targetPitch = SIM.input.pitch * 40 * (Math.PI / 180);
-  const targetRoll  = SIM.input.roll  * 40 * (Math.PI / 180);
-  // Use frame-rate independent smoothing
-  const attSmooth = 1 - Math.pow(0.82, dt * 60);
-  SIM.rot.pitch += (targetPitch - SIM.rot.pitch) * attSmooth;
-  SIM.rot.roll  += (targetRoll  - SIM.rot.roll)  * attSmooth;
-
-  // Yaw
-  SIM.rot.yaw += SIM.input.yaw * 2.2 * dt * mc.rot;
-  SIM.heading = ((SIM.rot.yaw * 180 / Math.PI) % 360 + 360) % 360;
-
-  const sinYaw = Math.sin(SIM.rot.yaw);
-  const cosYaw = Math.cos(SIM.rot.yaw);
-  const sinPitch = Math.sin(SIM.rot.pitch);
-
-  const fwd = -sinPitch * mc.sp;
-  const sde = -SIM.rot.roll * mc.sp * 1.8;
-
-  // Smooth acceleration — apply wind
-  const windScale = SIM.flightMode === 'P-GPS' ? 1.0 : 0.5;
-  SIM.vel.x += (sinYaw * fwd + cosYaw * sde + SIM.wind.x * windScale) * dt;
-  SIM.vel.z += (-cosYaw * fwd + sinYaw * sde + SIM.wind.z * windScale) * dt;
-
-  SIM.vel.x *= DRAG;
-  SIM.vel.z *= DRAG;
-
-  SIM.pos.x += SIM.vel.x * dt;
-  SIM.pos.y += SIM.vel.y * dt;
-  SIM.pos.z += SIM.vel.z * dt;
-
-  // Ground collision
-  const groundH = getTerrainHeight(SIM.pos.x, SIM.pos.z);
-  if (SIM.pos.y < groundH + 0.3) {
-    SIM.pos.y = groundH + 0.3;
-    SIM.vel.y = Math.max(SIM.vel.y, 0);
-    if (thrNorm < 0.05) { SIM.vel.x *= 0.7; SIM.vel.z *= 0.7; }
-  }
-
-  // Extended world bounds for 4000x4000 scenario
-  SIM.pos.x = Math.max(-560, Math.min(560, SIM.pos.x));
-  SIM.pos.z = Math.max(-560, Math.min(560, SIM.pos.z));
-
-  // RTH
-  if (SIM.rthActive) {
-    const dx = SIM.homePos.x - SIM.pos.x;
-    const dz = SIM.homePos.z - SIM.pos.z;
-    const dist = Math.sqrt(dx*dx + dz*dz);
-    if (SIM.pos.y < 15) SIM.vel.y += 0.5 * dt;
-    if (dist > 2) {
-      SIM.vel.x += (dx/dist) * 5 * dt;
-      SIM.vel.z += (dz/dist) * 5 * dt;
-    } else if (SIM.pos.y > groundH + 0.5) {
-      SIM.vel.y -= 2 * dt;
-    } else {
-      SIM.rthActive = false;
-      showStatus('RTH COMPLETE — LANDED');
+    body:before {
+      content: "";
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 0;
+      background-image: url('https://res.cloudinary.com/dway4iqeh/image/upload/v1781018129/huach_phhmz5.jpg');
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+      opacity: 0.35;
     }
-  }
-
-  SIM.altitude = SIM.pos.y - groundH;
-  SIM.hSpeed = Math.sqrt(SIM.vel.x*SIM.vel.x + SIM.vel.z*SIM.vel.z);
-  SIM.vSpeed = SIM.vel.y;
-  SIM.rpmCurrent = thrNorm * 8500 + (thrNorm > 0 ? 1200 : 0);
-
-  const dx2 = SIM.pos.x - SIM.lastPos.x, dz2 = SIM.pos.z - SIM.lastPos.z;
-  SIM.totalDist += Math.sqrt(dx2*dx2 + dz2*dz2);
-  SIM.lastPos = { x: SIM.pos.x, z: SIM.pos.z };
-
-  SIM.battery = Math.max(0, SIM.battery - (0.002 + thrNorm * 0.008) * dt);
-  SIM.voltage = 21.0 + (SIM.battery / 100) * 5.8;
-  SIM.flightTime += dt;
-}
-
-// ═══════════════════════════════════════════
-//  DRONE MESH UPDATE
-// ═══════════════════════════════════════════
-function updateDroneMesh() {
-  if (!droneMesh) return;
-
-  droneMesh.position.set(SIM.pos.x, SIM.pos.y, SIM.pos.z);
-  droneMesh.rotation.order = 'YXZ';
-  droneMesh.rotation.y = SIM.rot.yaw;
-  droneMesh.rotation.x = SIM.rot.pitch;
-  droneMesh.rotation.z = SIM.rot.roll;
-
-  const rpm = SIM.rpmCurrent;
-  const rotSpeed = (rpm / 100) * Math.PI * 2 * 0.022;
-  rotorMeshes.forEach((r, i) => {
-    const motorIdx = Math.floor(i / 2);
-    const dir = motorIdx % 2 === 0 ? 1 : -1;
-    r.rotation.y += rotSpeed * dir;
-    if (r.userData.disc) {
-      r.userData.disc.material.opacity = Math.min(rpm / 7500 * 0.70, 0.70);
-    }
-  });
-
-  const gimbalGroup = droneMesh.userData.gimbalGroup;
-  if (gimbalGroup) gimbalGroup.rotation.x = SIM.gimbalAngle * (Math.PI/180);
-
-  if (shadowPlane) {
-    const gh = getTerrainHeight(SIM.pos.x, SIM.pos.z);
-    shadowPlane.position.set(SIM.pos.x, gh + 0.05, SIM.pos.z);
-    const altFade = Math.max(0, 1 - SIM.altitude / 30);
-    shadowPlane.material.opacity = 0.35 * altFade;
-    const sc = 1 + SIM.altitude * 0.1;
-    shadowPlane.scale.set(sc, sc, sc);
-  }
-
-  // Sun follows drone loosely
-  sunLight.position.set(SIM.pos.x + 150, SIM.pos.y + 220, SIM.pos.z - 100);
-  sunLight.target.position.set(SIM.pos.x, 0, SIM.pos.z);
-  sunLight.target.updateMatrixWorld();
-}
-
-// ═══════════════════════════════════════════
-//  CAMERA FOLLOW — butter smooth
-// ═══════════════════════════════════════════
-const camOffsetBase = new THREE.Vector3(0, 4.2, 9);
-const camTarget = new THREE.Vector3();
-// Persistent smooth velocity tracker for camera lean
-let camVelSmooth = new THREE.Vector3();
-
-function updateCamera() {
-  // Compute target-frame smoothed velocity (low-pass)
-  camVelSmooth.x = ema(camVelSmooth.x, SIM.vel.x, 0.08);
-  camVelSmooth.y = ema(camVelSmooth.y, SIM.vel.y, 0.08);
-  camVelSmooth.z = ema(camVelSmooth.z, SIM.vel.z, 0.08);
-
-  const speedFactor = Math.min(SIM.hSpeed / 40, 1);
-  const camOffset = new THREE.Vector3(
-    camOffsetBase.x,
-    camOffsetBase.y + speedFactor * 1.5,
-    camOffsetBase.z + speedFactor * 5
-  );
-
-  const yaw = SIM.rot.yaw;
-  const ox = camOffset.x * Math.cos(yaw) - camOffset.z * Math.sin(yaw);
-  const oz = camOffset.x * Math.sin(yaw) + camOffset.z * Math.cos(yaw);
-
-  const targetPos = new THREE.Vector3(
-    SIM.pos.x + ox,
-    SIM.pos.y + camOffset.y,
-    SIM.pos.z + oz
-  );
-
-  // Frame-rate independent smooth follow — feels fluid at any FPS
-  const camAlpha = 1 - Math.pow(0.88, 1); // tuned for responsiveness
-  camera.position.lerp(targetPos, 0.09);
-  camTarget.lerp(new THREE.Vector3(SIM.pos.x, SIM.pos.y, SIM.pos.z), 0.14);
-  camera.lookAt(camTarget);
-
-  // Dynamic FOV
-  const targetFov = 60 + speedFactor * 12;
-  camera.fov += (targetFov - camera.fov) * 0.04;
-  camera.updateProjectionMatrix();
-}
-
-// ═══════════════════════════════════════════
-//  NIGHT MODE
-// ═══════════════════════════════════════════
-let nightT = 0;
-
-function toggleNight() {
-  SIM.nightMode = !SIM.nightMode;
-  document.getElementById('btn-night').textContent = SIM.nightMode ? '◑ NIGHT' : '◑ DAY';
-  document.getElementById('night-overlay').style.opacity = SIM.nightMode ? '1' : '0';
-  showStatus(SIM.nightMode ? 'NIGHT MODE ACTIVATED' : 'DAY MODE ACTIVATED');
-}
-
-function updateNightMode(dt) {
-  const target = SIM.nightMode ? 1 : 0;
-  nightT += (target - nightT) * dt * 0.5;
-
-  scene.fog.color.setRGB(
-    nightT < 0.5 ? 0.55 - nightT * 0.5 : 0.01,
-    nightT < 0.5 ? 0.75 - nightT * 0.6 : 0.03,
-    nightT < 0.5 ? 0.83 - nightT * 0.6 : 0.06
-  );
-
-  if (skyDome) skyDome.material.uniforms.night.value = nightT;
-
-  sunLight.intensity = Math.max(0.05, 1.4 - nightT * 1.35);
-  ambientLight.intensity = Math.max(0.05, 0.35 - nightT * 0.30);
-  hemiLight.intensity = Math.max(0.05, 0.65 - nightT * 0.60);
-  fillLight.intensity = Math.max(0, 0.18 - nightT * 0.15);
-
-  if (stars) stars.material.opacity = nightT * 0.9;
-  if (cityLights) cityLights.visible = nightT > 0.4;
-
-  renderer.toneMappingExposure = Math.max(0.3, 1.1 - nightT * 0.7);
-
-  // Animate clouds opacity at night
-  cloudMeshes.forEach(c => {
-    c.children.forEach(puff => {
-      if (puff.material) puff.material.opacity = Math.max(0.1, (puff.material.opacity || 0.6) * (1 - nightT * 0.3));
-    });
-  });
-}
-
-// ═══════════════════════════════════════════
-//  ENVIRONMENT ANIMATION
-// ═══════════════════════════════════════════
-let envTime = 0;
-
-function updateEnvironment(dt) {
-  envTime += dt;
-
-  // Drift clouds slowly across sky
-  cloudMeshes.forEach(c => {
-    c.position.x = c.userData.baseX + Math.sin(envTime * c.userData.driftSpeed * 0.05) * 30;
-    c.position.y += Math.sin(envTime * 0.3 + c.userData.baseX) * 0.002;
-  });
-
-  // Animate water surfaces
-  scene.traverse(obj => {
-    if (obj.userData.isWater) {
-      obj.position.y = obj.userData.baseY + Math.sin(envTime * 0.8) * 0.05;
-      if (obj.material) obj.material.roughness = 0.05 + Math.sin(envTime * 1.5) * 0.03;
-    }
-  });
-}
-
-// ═══════════════════════════════════════════
-//  CONTROLS
-// ═══════════════════════════════════════════
-function toggleArm() {
-  SIM.armed = !SIM.armed;
-  document.getElementById('btn-arm').textContent = SIM.armed ? 'DISARM' : 'ARM';
-  document.getElementById('btn-arm').style.color = SIM.armed ? 'var(--green)' : '';
-  showStatus(SIM.armed ? '✓ MOTORS ARMED — READY TO FLY' : 'MOTORS DISARMED');
-  if (!SIM.armed) { SIM.input.throttle = 0; SIM.vel = {x:0,y:0,z:0}; SIM.rpmCurrent = 0; }
-}
-
-function togglePause() {
-  SIM.paused = !SIM.paused;
-  document.getElementById('btn-pause').textContent = SIM.paused ? '▶ RESUME' : '⏸ PAUSE';
-  showStatus(SIM.paused ? 'FLIGHT PAUSED' : 'FLIGHT RESUMED');
-}
-
-function emergencyStop() {
-  SIM.armed = false; SIM.paused = false;
-  SIM.vel = {x:0,y:0,z:0};
-  SIM.input = {throttle:0, yaw:0, pitch:0, roll:0};
-  SIM.rpmCurrent = 0;
-  document.getElementById('btn-arm').textContent = 'ARM';
-  document.getElementById('btn-stop').classList.add('active-btn');
-  setTimeout(() => document.getElementById('btn-stop').classList.remove('active-btn'), 500);
-  showStatus('⚠ EMERGENCY STOP — MOTORS OFF');
-}
-
-function triggerRTH() {
-  if (!SIM.armed) { showStatus('ARM FIRST'); return; }
-  SIM.rthActive = !SIM.rthActive;
-  document.getElementById('btn-rth').textContent = SIM.rthActive ? '⌂ CANCEL RTH' : '⌂ RTH';
-  showStatus(SIM.rthActive ? 'RETURN TO HOME INITIATED' : 'RTH CANCELLED');
-}
-
-function cycleMode() {
-  SIM.modeIdx = (SIM.modeIdx + 1) % SIM.modes.length;
-  SIM.flightMode = SIM.modes[SIM.modeIdx];
-  document.getElementById('btn-mode').textContent = SIM.flightMode;
-  document.getElementById('flight-mode-badge').textContent = SIM.flightMode;
-  showStatus('FLIGHT MODE: ' + SIM.flightMode);
-}
-
-function updateGimbal(v) {
-  SIM.gimbalAngle = parseFloat(v);
-  document.getElementById('gimbal-val').textContent = v + '°';
-}
-
-let statusTimeout;
-function showStatus(msg) {
-  const el = document.getElementById('status-msg');
-  el.textContent = msg; el.style.opacity = '1';
-  clearTimeout(statusTimeout);
-  statusTimeout = setTimeout(() => el.style.opacity = '0', 3000);
-}
-
-// ═══════════════════════════════════════════
-//  TRAIL UPDATE
-// ═══════════════════════════════════════════
-let trailPoints = [];
-let trailLine;
-let lastTrail = 0;
-
-function updateTrailTimer() {
-  const now = performance.now();
-  if (now - lastTrail > 200) {
-    if (SIM.armed && !SIM.paused) {
-      SIM.trail.push({ x: SIM.pos.x, z: SIM.pos.z });
-      if (SIM.trail.length > 150) SIM.trail.shift();
-    }
-    lastTrail = now;
-    updateTrail();
-  }
-}
-
-function updateTrail() {
-  if (trailPoints.length > 300) trailPoints.shift();
-  trailPoints.push(new THREE.Vector3(SIM.pos.x, SIM.pos.y, SIM.pos.z));
-  if (trailLine) scene.remove(trailLine);
-  if (trailPoints.length < 2) return;
-  const geo = new THREE.BufferGeometry().setFromPoints(trailPoints);
-  const mat = new THREE.LineBasicMaterial({ color: 0x00ff41, transparent:true, opacity:0.4 });
-  trailLine = new THREE.Line(geo, mat);
-  scene.add(trailLine);
-}
-
-// ═══════════════════════════════════════════
-//  HUD UPDATE
-// ═══════════════════════════════════════════
-let lastHudUpdate = 0;
-
-function updateHUD() {
-  const now = performance.now();
-  if (now - lastHudUpdate < 80) return;
-  lastHudUpdate = now;
-
-  const alt = SIM.altitude.toFixed(1);
-  const asl = (SIM.pos.y).toFixed(1);
-  const hs = SIM.hSpeed.toFixed(1);
-  const vs = SIM.vSpeed.toFixed(1);
-  const hdg = Math.round(SIM.heading);
-  const bat = Math.round(SIM.battery);
-  const dist = Math.round(Math.sqrt(Math.pow(SIM.pos.x-SIM.homePos.x,2)+Math.pow(SIM.pos.z-SIM.homePos.z,2)));
-
-  document.getElementById('hud-alt').innerHTML   = alt + '<span style="font-size:9px;opacity:.5">m</span>';
-  document.getElementById('hud-hspd').innerHTML  = hs  + '<span style="font-size:9px;opacity:.5">m/s</span>';
-  document.getElementById('hud-vspd').innerHTML  = vs  + '<span style="font-size:9px;opacity:.5">m/s</span>';
-  document.getElementById('hud-dist').innerHTML  = dist+ '<span style="font-size:9px;opacity:.5">m</span>';
-  document.getElementById('hud-hdg').textContent = hdg.toString().padStart(3,'0') + '°';
-  document.getElementById('hud-batt').textContent = bat + '%';
-
-  const batEl = document.getElementById('hud-batt');
-  batEl.style.color = bat > 40 ? 'var(--green)' : bat > 20 ? 'var(--amber)' : 'var(--red)';
-  batEl.style.textShadow = `0 0 6px ${bat > 40 ? 'var(--green)' : bat > 20 ? 'var(--amber)' : 'var(--red)'}`;
-
-  document.getElementById('stat-asl').textContent   = asl;
-  document.getElementById('stat-agl').textContent   = alt;
-  document.getElementById('stat-lat').textContent   = (-36.824 + SIM.pos.x * 0.00001).toFixed(4);
-  document.getElementById('stat-lon').textContent   = (-73.049 + SIM.pos.z * 0.00001).toFixed(4);
-  document.getElementById('stat-pitch').textContent = (SIM.rot.pitch * 180 / Math.PI).toFixed(1);
-  document.getElementById('stat-roll').textContent  = (SIM.rot.roll  * 180 / Math.PI).toFixed(1);
-  document.getElementById('stat-yaw').textContent   = hdg;
-  document.getElementById('stat-thr').textContent   = Math.round(SIM.throttlePct);
-  document.getElementById('stat-rpm').textContent   = Math.round(SIM.rpmCurrent);
-  document.getElementById('stat-batt').textContent  = bat;
-  document.getElementById('stat-volt').textContent  = SIM.voltage.toFixed(1);
-  document.getElementById('stat-amp').textContent   = (SIM.throttlePct * 0.15).toFixed(1);
-
-  const batFill = document.getElementById('battery-fill');
-  batFill.style.width = bat + '%';
-  batFill.style.background = bat > 40
-    ? 'linear-gradient(90deg,var(--green-dim),var(--green))'
-    : bat > 20 ? 'linear-gradient(90deg,#cc7700,var(--amber))'
-    : 'linear-gradient(90deg,#990000,var(--red))';
-
-  document.getElementById('thr-fill').style.height = Math.max(SIM.throttlePct, 0) + '%';
-  document.getElementById('compass-needle').style.transform = `rotate(${SIM.heading}deg)`;
-  document.getElementById('compass-hdg').textContent = `HDG ${hdg.toString().padStart(3,'0')}°`;
-
-  drawMinimap();
-  drawADI();
-}
-
-// ═══════════════════════════════════════════
-//  MINIMAP — scale adjusted for 4000 world
-// ═══════════════════════════════════════════
-const mmCtx = document.getElementById('minimap-canvas').getContext('2d');
-const MM_SIZE = 140, MM_SCALE = 0.35; // Adjusted scale: 400m range shown
-
-function drawMinimap() {
-  const ctx = mmCtx;
-  ctx.clearRect(0, 0, MM_SIZE, MM_SIZE);
-  ctx.fillStyle = 'rgba(0,8,0,0.9)';
-  ctx.fillRect(0, 0, MM_SIZE, MM_SIZE);
-
-  ctx.strokeStyle = 'rgba(0,255,65,0.08)';
-  ctx.lineWidth = 0.5;
-  for (let i = 0; i < MM_SIZE; i += 14) {
-    ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, MM_SIZE); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(MM_SIZE, i); ctx.stroke();
-  }
-
-  const cx = MM_SIZE/2, cy = MM_SIZE/2;
-
-  // Towers
-  TOWERS.forEach(t => {
-    const tx = cx + (t.x - SIM.pos.x) * MM_SCALE;
-    const ty = cy + (t.z - SIM.pos.z) * MM_SCALE;
-    if (tx < 0 || tx > MM_SIZE || ty < 0 || ty > MM_SIZE) return;
-    ctx.fillStyle = 'rgba(255,80,0,0.7)';
-    ctx.fillRect(tx-2, ty-2, 4, 4);
-  });
-
-  if (SIM.trail.length > 1) {
-    ctx.strokeStyle = 'rgba(0,255,65,0.3)';
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    SIM.trail.forEach((p, i) => {
-      const tx = cx + (p.x - SIM.pos.x) * MM_SCALE;
-      const ty = cy + (p.z - SIM.pos.z) * MM_SCALE;
-      i === 0 ? ctx.moveTo(tx, ty) : ctx.lineTo(tx, ty);
-    });
-    ctx.stroke();
-  }
-
-  const hx = cx + (SIM.homePos.x - SIM.pos.x) * MM_SCALE;
-  const hz = cy + (SIM.homePos.z - SIM.pos.z) * MM_SCALE;
-  ctx.fillStyle = '#00ff41';
-  ctx.beginPath();
-  ctx.moveTo(hx, hz-5); ctx.lineTo(hx-3, hz+3); ctx.lineTo(hx+3, hz+3);
-  ctx.closePath(); ctx.fill();
-
-  ctx.save();
-  ctx.translate(cx, cy);
-  ctx.rotate(SIM.rot.yaw);
-  ctx.fillStyle = '#00ff41';
-  ctx.shadowColor = '#00ff41';
-  ctx.shadowBlur = 6;
-  ctx.beginPath();
-  ctx.moveTo(0, -6); ctx.lineTo(-4, 5); ctx.lineTo(4, 5);
-  ctx.closePath(); ctx.fill();
-  ctx.restore();
-
-  ctx.fillStyle = 'rgba(0,255,65,0.4)';
-  ctx.fillRect(8, MM_SIZE-12, 28, 1);
-  ctx.font = '7px "Share Tech Mono"';
-  ctx.fillText('80m', 8, MM_SIZE-4);
-}
-
-// ═══════════════════════════════════════════
-//  ADI
-// ═══════════════════════════════════════════
-const adiCanvas = document.getElementById('adi-canvas');
-const adiCtx = adiCanvas.getContext('2d');
-
-function drawADI() {
-  const ctx = adiCtx;
-  const W=110, H=110, cx=W/2, cy=H/2, r=50;
-  ctx.clearRect(0,0,W,H);
-  ctx.save();
-  ctx.beginPath(); ctx.arc(cx,cy,r,0,Math.PI*2); ctx.clip();
-
-  const roll = SIM.rot.roll;
-  const pitchOffset = SIM.rot.pitch * 80;
-
-  ctx.save();
-  ctx.translate(cx,cy);
-  ctx.rotate(roll);
-
-  ctx.fillStyle = SIM.nightMode ? '#050a18' : '#2a7dc9';
-  ctx.fillRect(-r, -r-pitchOffset, r*2, r);
-  ctx.fillStyle = SIM.nightMode ? '#0a1505' : '#5a8040';
-  ctx.fillRect(-r, -pitchOffset, r*2, r);
-
-  ctx.strokeStyle = 'rgba(255,255,255,0.8)';
-  ctx.lineWidth = 1.5;
-  ctx.beginPath();
-  ctx.moveTo(-r, -pitchOffset); ctx.lineTo(r, -pitchOffset);
-  ctx.stroke();
-
-  ctx.strokeStyle = 'rgba(255,255,255,0.4)';
-  ctx.lineWidth = 0.8;
-  [-30,-20,-10,10,20,30].forEach(deg => {
-    const y = -pitchOffset - deg*2.5;
-    const len = deg%20===0 ? 20 : 12;
-    ctx.beginPath(); ctx.moveTo(-len,y); ctx.lineTo(len,y); ctx.stroke();
-  });
-  ctx.restore();
-
-  ctx.strokeStyle = '#ffb800';
-  ctx.lineWidth = 2;
-  ctx.beginPath();
-  ctx.moveTo(cx-20,cy); ctx.lineTo(cx-5,cy);
-  ctx.moveTo(cx+5,cy);  ctx.lineTo(cx+20,cy);
-  ctx.moveTo(cx,cy-4);  ctx.lineTo(cx,cy+4);
-  ctx.stroke();
-  ctx.restore();
-
-  ctx.beginPath(); ctx.arc(cx,cy,r,0,Math.PI*2);
-  ctx.strokeStyle='rgba(0,255,65,0.5)'; ctx.lineWidth=1.5; ctx.stroke();
-
-  ctx.save();
-  ctx.translate(cx,cy);
-  [0,30,60,-30,-60,90,-90,180].forEach(deg => {
-    ctx.save();
-    ctx.rotate(deg*Math.PI/180 - roll);
-    ctx.beginPath();
-    ctx.moveTo(0,-r+2); ctx.lineTo(0,-r+(deg%90===0?8:5));
-    ctx.strokeStyle='rgba(0,255,65,0.5)'; ctx.lineWidth=1; ctx.stroke();
-    ctx.restore();
-  });
-  ctx.restore();
-}
-
-// ═══════════════════════════════════════════
-//  JOYSTICK CONTROLS
-// ═══════════════════════════════════════════
-function setupJoystick(elId, knobId, onMove, onRelease) {
-  const el = document.getElementById(elId);
-  const knob = document.getElementById(knobId);
-  let active = false, startX, startY;
-  const MAX = 24;
-
-  function update(cx, cy) {
-    let dx = cx-startX, dy = cy-startY;
-    const len = Math.sqrt(dx*dx + dy*dy);
-    if (len > MAX) { dx *= MAX/len; dy *= MAX/len; }
-    knob.style.transform = `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px))`;
-    onMove(dx/MAX, dy/MAX);
-  }
-
-  function reset() {
-    knob.style.transform = 'translate(-50%,-50%)';
-    onRelease();
-    active = false;
-  }
-
-  el.addEventListener('mousedown', e => { active=true; startX=e.clientX; startY=e.clientY; e.preventDefault(); });
-  window.addEventListener('mousemove', e => { if (!active) return; update(e.clientX, e.clientY); });
-  window.addEventListener('mouseup', () => { if (active) reset(); });
-  el.addEventListener('touchstart', e => { active=true; startX=e.touches[0].clientX; startY=e.touches[0].clientY; e.preventDefault(); }, {passive:false});
-  window.addEventListener('touchmove', e => { if (!active) return; update(e.touches[0].clientX, e.touches[0].clientY); }, {passive:false});
-  window.addEventListener('touchend', () => { if (active) reset(); });
-}
-
-// ═══════════════════════════════════════════
-//  BEACON ANIMATION
-// ═══════════════════════════════════════════
-let beaconPhase = 0;
-function animateBeacons() {
-  beaconPhase += 0.08;
-  const on = Math.sin(beaconPhase) > 0.3;
-  scene.traverse(obj => {
-    if (obj.userData && obj.userData.isBeacon) {
-      obj.material.color.setHex(on ? 0xff2200 : 0x440000);
-      if (obj.userData.beaconLight) obj.userData.beaconLight.intensity = on ? 2.0 : 0;
-    }
-  });
-
-  let nearest = 999;
-  TOWERS.forEach(t => {
-    const dx = SIM.pos.x-t.x, dz = SIM.pos.z-t.z;
-    const d = Math.sqrt(dx*dx + dz*dz);
-    if (d < nearest) nearest = d;
-  });
-  if (nearest < 20) showStatus(`⚠ OBSTACLE ${Math.round(nearest)}m`);
-}
-
-function onResize() {
-  camera.aspect = window.innerWidth / window.innerHeight;
-  camera.updateProjectionMatrix();
-  renderer.setSize(window.innerWidth, window.innerHeight);
-}
-
-// ═══════════════════════════════════════════
-//  MAIN LOOP
-// ═══════════════════════════════════════════
-function animate() {
-  requestAnimationFrame(animate);
-  const dt = Math.min(clock.getDelta(), 0.05);
-
-  updatePhysics(dt);
-  updateDroneMesh();
-  updateCamera();
-  updateNightMode(dt);
-  updateEnvironment(dt);
-  updateTrailTimer();
-  updateHUD();
-  animateBeacons();
-
-  renderer.render(scene, camera);
-}
-
-// ═══════════════════════════════════════════
-//  INIT
-// ═══════════════════════════════════════════
-async function init() {
-  const steps = [
-    'INITIALIZANDO ROTORES...',
-    'GENERANDO TERRENO 4×4 KM...',
-    'CONSTRUYENDO VEGETACIÓN...',
-    'CARGANDO SISTEMAS METEOROLOGICOS...',
-    'CALIBRANDO SENSORES...',
-    'LISTO PARA VOLAR'
-  ];
-
-  const bar = document.getElementById('load-bar-fill');
-  const txt = document.getElementById('load-text');
-
-  for (let i = 0; i < steps.length; i++) {
-    txt.textContent = steps[i];
-    bar.style.width = ((i+1) / steps.length * 100) + '%';
-    await new Promise(r => setTimeout(r, 380));
-  }
-
-  initThree();
-
-  setupJoystick('js-left', 'js-left-knob',
-    (x, y) => {
-      SIM.input.yaw = x * 0.8;
-      if (Math.abs(y) > 0.05) {
-        SIM._jsThrottleActive = true;
-        SIM.input.throttle = Math.max(-0.5, Math.min(1, SIM.input.throttle - y * 0.04));
-      } else {
-        SIM._jsThrottleActive = false;
-      }
-    },
-    () => { SIM.input.yaw = 0; SIM._jsThrottleActive = false; }
-  );
-
-  setupJoystick('js-right', 'js-right-knob',
-    (x, y) => { SIM.input.pitch = y * 0.85; SIM.input.roll = x * 0.85; },
-    () => { SIM.input.pitch = 0; SIM.input.roll = 0; }
-  );
-
-  SIM.pos.y = getTerrainHeight(0, 0) + 0.3;
-  await new Promise(r => setTimeout(r, 300));
-
-  document.getElementById('loading-screen').style.transition = 'opacity 0.6s';
-  document.getElementById('loading-screen').style.opacity = '0';
-  setTimeout(() => document.getElementById('loading-screen').remove(), 700);
-
-  showStatus('SISTEMA LISTO v6.0 — ESCENARIO 4KM × 4KM');
-  animate();
-}
-
-init();
-</script>
+  </style>
+</head>
+
+<body class="text-huachipato-text min-h-screen flex flex-col">
+
+  <header class="bg-white shadow-md border-b-4 border-huachipato-red sticky top-0 z-50">
+    <div class="max-w-7xl mx-auto px-4 h-20 flex items-center justify-between">
+      <div class="flex items-center gap-4">
+        <img src="https://res.cloudinary.com/dway4iqeh/image/upload/v1773364564/OIP_ngwuax.jpg" alt="Logo Huachipato" class="h-12 object-contain">
+        <h1 class="hidden sm:block text-xl font-bold text-huachipato-dark">Plataforma de Inducción</h1>
+      </div>
+      <div class="flex items-center gap-3">
+        <div id="user-badge" class="hidden flex items-center gap-2 bg-gray-100 px-3 py-1.5 rounded-full border">
+          <span id="badge-name" class="text-sm font-semibold text-gray-700"></span>
+        </div>
+        <button id="btn-admin-view" onclick="showAdminLoginModal()" class="bg-gray-800 text-white text-xs font-bold px-3 py-2 rounded hover:bg-black transition">
+          Admin de Sistema
+        </button>
+        <button id="btn-logout-view" onclick="logoutAdmin()" class="hidden bg-huachipato-red text-white text-xs font-bold px-3 py-2 rounded hover:bg-red-700 transition">
+          Salir Admin
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main class="flex-grow flex items-center justify-center p-4 sm:p-6" id="app-container"></main>
+
+  <div id="admin-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-50">
+    <div class="bg-white p-6 rounded-xl shadow-2xl w-full max-w-sm fade-in">
+        <h3 class="text-lg font-bold text-huachipato-dark mb-4 border-b pb-2">Acceso Administrativo</h3>
+        <div class="space-y-3">
+            <input type="text" id="admin-user" placeholder="Usuario" class="w-full p-2 border rounded outline-none focus:ring-2 focus:ring-huachipato-blue">
+            <input type="password" id="admin-pass" placeholder="Contraseña" class="w-full p-2 border rounded outline-none focus:ring-2 focus:ring-huachipato-blue">
+        </div>
+        <div class="mt-5 flex gap-2 justify-end">
+            <button onclick="closeAdminModal()" class="px-4 py-2 text-sm text-gray-500 hover:underline">Cancelar</button>
+            <button onclick="loginAdmin()" class="bg-huachipato-blue text-white px-4 py-2 rounded text-sm font-bold hover:bg-huachipato-dark">Ingresar</button>
+        </div>
+    </div>
+  </div>
+
+  <div id="detail-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-50 p-4">
+    <div class="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[85vh] flex flex-col fade-in">
+        <div class="p-5 border-b sticky top-0 bg-white rounded-t-xl z-10 flex justify-between items-center">
+            <div>
+                <h3 id="detail-modal-title" class="text-lg font-bold text-huachipato-dark">Detalle del Formulario</h3>
+                <p id="detail-modal-subtitle" class="text-xs text-gray-500"></p>
+            </div>
+            <button onclick="closeDetailModal()" class="text-gray-400 hover:text-gray-600 text-2xl font-semibold">&times;</button>
+        </div>
+        <div id="detail-modal-body" class="p-6 overflow-y-auto space-y-4 flex-grow text-sm">
+            </div>
+        <div class="p-4 border-t bg-gray-50 rounded-b-xl flex justify-end">
+            <button onclick="closeDetailModal()" class="bg-huachipato-dark text-white px-5 py-2 rounded-lg text-sm font-bold hover:bg-huachipato-blue transition">Cerrar Vista</button>
+        </div>
+    </div>
+  </div>
+
+  <footer class="bg-huachipato-dark text-white text-center py-4 text-sm mt-auto relative z-10">
+    <p>&copy; 2026 Compañía Siderúrgica Huachipato. Todos los derechos reservados.</p>
+  </footer>
+
+  <div id="toast" class="fixed bottom-4 right-4 bg-gray-800 text-white px-6 py-3 rounded-lg shadow-lg transform translate-y-20 opacity-0 transition-all duration-300 z-50">
+    <span id="toast-msg"></span>
+  </div>
+
+  <script>
+        // ================= CONFIGURACIÓN DE TU BASE DE DATOS CLOUD =================
+        const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzna5nXtPEwH7Nu9Sr8MICnqCUavhK7tna88x3q0GcDQ7pRuRqarPfvB-bxiWLW4YFZiA/exec";
+        // =========================================================================
+
+        // CORRECCIÓN DE ÍNDICES: Ajustados a base 0 (0=Opción 1, 1=Opción 2, 2=Opción 3, 3=Opción 4) para una evaluación de asertividad exacta.
+        const quizData = [
+            { id: 1, question: "¿Cuál es el EPP básico y obligatorio a utilizar en planta?", options: ["Casco de seguridad sin barbiquejo, lentes de seguridad, protección auditiva, zapatos de seguridad, guantes, chaleco reflectante", "Casco de seguridad con barbiquejo, lentes de sol, protección auditiva, zapatos de seguridad, guantes, chaleco reflectante", "Casco de seguridad con barbiquejo, lentes de seguridad, protección auditiva, zapatos de seguridad, guantes, chaleco reflectante", "Casco de seguridad con barbiquejo, lentes de seguridad, protección auditiva, zapatillas de seguridad, guantes, chaleco reflectante"], correctAnswer: 2 },
+            { id: 2, question: "¿Qué tipo de equipo / aparejos se utiliza comúnmente para la carga suspendida? ", options: ["Grúas", "Huinches - Tecles", "Cadenas y cables", "Todas las anteriores"], correctAnswer: 3 },
+            { id: 3, question: "¿Cuál es el principal riesgo asociado con la carga suspendida?", options: ["Caída de la carga", "Atmósfera deficiente", "Caída de personas a distinto nivel", "Todas las anteriores"], correctAnswer: 0 },
+            { id: 4, question: "¿Qué medida de seguridad es fundamental para la carga suspendida?", options: ["Realizar inspecciones regulares del equipo", "Capacitar a los trabajadores en técnicas de manejo de carga", "Prohibir transitar bajo carga suspendida", "Todas las anteriores"], correctAnswer: 3 },
+            { id: 5, question: "¿Qué ejemplo es una situación en que un trabajador podría quedar atrapado en una industria?", options: ["Un trabajador que se cae de una altura", "Un trabajador que se expone a intervención en una correa transportadora en movimiento", "Un trabajador que se expone a una sustancia química peligrosa", "Un trabajador que se lesiona al levantar un objeto pesado"], correctAnswer: 1 },
+            { id: 6, question: "¿Cuál es la mejor forma de prevenir el atrapamiento en una industria?", options: ["Proporcionar capacitación a los trabajadores sobre los riesgos de atrapamiento", "Realizar inspecciones regulares del equipo y las instalaciones", "Contar con un sistema de bloqueo de equipos", "Todas las anteriores"], correctAnswer: 3 },
+            { id: 7, question: "¿Cuál es el principal riesgo asociado con los vehículos y maquinaria en movimiento?", options: ["Caída desde altura", "Atropello, Lesiones por objetos en movimiento", "Exposición a sustancias químicas peligrosas", "Incendios"], correctAnswer: 1 },
+            { id: 8, question: "¿Cuál es el procedimiento correcto para cruzar una zona donde se encuentran vehículos y maquinaria en movimiento?", options: ["Cruzar rápidamente sin mirar", "Mirar a ambos lados antes de cruzar", "No utilizar un paso peatonal designado y/o autorizado", "No esparar a que el equipo se detenga antes de cruzar"], correctAnswer: 1 },
+            { id: 9, question: "Para conductores de camiones que ingresa a realizar carga y descarga de productos, esta prohibido", options: ["Subirse a la estructura del camión y/o carga a realizar alguna tarea", "Bajarse del camión durante la carga y descarga", "Hablar por celular o utilizar cualquier elemento distractor durante la conducción", "Todas las anteriores"], correctAnswer: 3 },
+            { id: 10, question: "¿Qué es lo que debe hacer un operador de vehiculos o maquinaria en movimiento si nota un problema con el equipo?", options: ["Continuar operando el equipo.Existe un costo operacional por detención", "Detener el equipo y notificar a un supervisor", "Intentar reparar el equipo el mismo", "Ignorar el problema y seguir operando"], correctAnswer: 1 }
+        ];
+
+        let AppState = {
+            user: { nombre: '', rut: '', empresa: '' },
+            currentQuestionIndex: 0,
+            answers: new Array(10).fill(null),
+            score: 0,
+            signatureImage: null,
+            adminMode: false,
+            cachedRecords: []
+        };
+
+        let canvas, ctx, isDrawing = false, lastX = 0, lastY = 0;
+
+        function showToast(msg) {
+            const t = document.getElementById('toast');
+            document.getElementById('toast-msg').textContent = msg;
+            t.classList.remove('translate-y-20', 'opacity-0');
+            setTimeout(() => t.classList.add('translate-y-20', 'opacity-0'), 4000);
+        }
+
+        function formatRut(rut) {
+            let value = rut.replace(/[^\dkK]/g, '');
+            if (value.length < 2) return value;
+            let cuerpo = value.slice(0, -1);
+            let dv = value.slice(-1).toUpperCase();
+            return cuerpo.replace(/\B(?=(\d{3})+(?!\d))/g, ".") + "-" + dv;
+        }
+
+        function renderLogin() {
+            document.getElementById('app-container').innerHTML = `
+                <div class="w-full max-w-md bg-white rounded-xl shadow-xl p-8 fade-in relative z-10">
+                    <h2 class="text-2xl font-bold text-huachipato-dark mb-6 text-center">Ingreso a Inducción</h2>
+                    <div class="space-y-4">
+                        <input type="text" id="input-name" placeholder="Nombre Completo" class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-huachipato-blue outline-none">
+                        <input type="text" id="input-rut" placeholder="RUT (Ej: 12.345.678-9)" class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-huachipato-blue outline-none" oninput="this.value = formatRut(this.value)">
+                        <input type="text" id="input-empresa" placeholder="Nombre de la Empresa / Contratista" class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-huachipato-blue outline-none">
+                        <button onclick="validateLogin()" class="w-full bg-huachipato-blue text-white font-bold py-3 rounded-lg hover:bg-huachipato-dark transition">Iniciar Inducción</button>
+                    </div>
+                </div>`;
+        }
+
+        window.validateLogin = function() {
+            const n = document.getElementById('input-name').value.trim();
+            const r = document.getElementById('input-rut').value.trim();
+            const e = document.getElementById('input-empresa').value.trim();
+            if(n.length > 5 && r.length >= 8 && e.length > 2) {
+                AppState.user = { nombre: n, rut: r, empresa: e };
+                document.getElementById('user-badge').classList.remove('hidden');
+                document.getElementById('badge-name').textContent = n.split(' ')[0];
+                renderVideo();
+            } else {
+                showToast("Por favor, ingrese datos válidos en todos los campos");
+            }
+        };
+
+        function renderVideo() {
+            document.getElementById('app-container').innerHTML = `
+                <div class="w-full max-w-4xl bg-white rounded-xl shadow-xl p-6 fade-in text-center relative z-10">
+                    <h2 class="text-2xl font-bold text-huachipato-dark mb-4">Capacitación de Seguridad</h2>
+                    <div class="aspect-video bg-black rounded-lg overflow-hidden mb-6 flex items-center justify-center">
+                        <video id="induction-video" class="w-full h-full object-contain" controls>
+                            <source src="https://res.cloudinary.com/dway4iqeh/video/upload/v1781353359/videoplayback_ytheyc.mp4" type="video/mp4">
+                        </video>
+                    </div>
+                    <button id="btn-quiz" onclick="renderQuiz()" class="bg-huachipato-red text-white font-bold py-3 px-10 rounded-lg hover:bg-red-700 transition">Ir al Cuestionario</button>
+                </div>`;
+        }
+
+        function renderQuiz() {
+            const q = quizData[AppState.currentQuestionIndex];
+            document.getElementById('app-container').innerHTML = `
+                <div class="w-full max-w-2xl bg-white rounded-xl shadow-xl p-8 fade-in relative z-10">
+                    <div class="w-full bg-gray-200 h-2 rounded-full mb-6">
+                        <div class="bg-huachipato-blue h-2 rounded-full transition-all" style="width: ${(AppState.currentQuestionIndex + 1) * 10}%"></div>
+                    </div>
+                    <h3 class="text-xl font-bold mb-6">${AppState.currentQuestionIndex + 1}. ${q.question}</h3>
+                    <div class="space-y-3">
+                        ${q.options.map((opt, i) => `
+                            <button id="opt-${i}" onclick="selectOpt(${i})" class="quiz-option w-full text-left p-4 border-2 rounded-xl transition ${AppState.answers[AppState.currentQuestionIndex] === i ? 'border-huachipato-blue bg-blue-50 font-medium' : 'border-gray-200 hover:bg-gray-50'}">
+                                ${opt}
+                            </button>
+                        `).join('')}
+                    </div>
+                    <div class="mt-8 flex justify-between">
+                        <button onclick="prevQ()" class="text-gray-500 font-bold ${AppState.currentQuestionIndex === 0 ? 'invisible' : ''}">Anterior</button>
+                        <button onclick="nextQ()" class="bg-huachipato-blue text-white px-8 py-3 rounded-lg font-bold hover:bg-huachipato-dark transition">Siguiente</button>
+                    </div>
+                </div>`;
+        }
+
+        window.selectOpt = (i) => { 
+            AppState.answers[AppState.currentQuestionIndex] = i; 
+            document.querySelectorAll('.quiz-option').forEach((btn, index) => {
+                btn.className = index === i ? "quiz-option w-full text-left p-4 border-2 rounded-xl transition border-huachipato-blue bg-blue-50 font-medium" : "quiz-option w-full text-left p-4 border-2 rounded-xl transition border-gray-200 hover:bg-gray-50";
+            });
+        };
+
+        window.prevQ = () => { AppState.currentQuestionIndex--; renderQuiz(); };
+        window.nextQ = () => {
+            if(AppState.answers[AppState.currentQuestionIndex] === null) return showToast("Seleccione una respuesta");
+            if(AppState.currentQuestionIndex < 9) { AppState.currentQuestionIndex++; renderQuiz(); } else { renderSignature(); }
+        };
+
+        function renderSignature() {
+            document.getElementById('app-container').innerHTML = `
+                <div class="w-full max-w-md bg-white rounded-xl shadow-xl p-8 fade-in text-center relative z-10">
+                    <h2 class="text-2xl font-bold text-huachipato-dark mb-2">Firma Digital del Registro</h2>
+                    <p class="text-sm text-gray-500 mb-6">Por favor, dibuje su firma en el recuadro inferior para finalizar formalmente su acreditación.</p>
+                    <div class="border-2 border-dashed border-gray-300 rounded-lg overflow-hidden bg-gray-50 relative">
+                        <canvas id="signature-canvas" width="400" height="200" class="w-full h-auto block touch-none cursor-crosshair bg-gray-50"></canvas>
+                    </div>
+                    <div class="mt-6 flex gap-4">
+                        <button onclick="clearSignature()" class="w-1/2 bg-gray-200 text-gray-700 font-bold py-3 rounded-lg hover:bg-gray-300 transition">Limpiar</button>
+                        <button onclick="processFinal()" class="w-1/2 bg-huachipato-blue text-white font-bold py-3 rounded-lg hover:bg-huachipato-dark transition">Finalizar</button>
+                    </div>
+                </div>`;
+            initCanvas();
+        }
+
+        function initCanvas() {
+            canvas = document.getElementById('signature-canvas'); if (!canvas) return;
+            ctx = canvas.getContext('2d'); ctx.strokeStyle = '#0033a0'; ctx.lineWidth = 3; ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+            function getPos(e) {
+                const rect = canvas.getBoundingClientRect();
+                const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+                const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+                return { x: (clientX - rect.left) * (canvas.width / rect.width), y: (clientY - rect.top) * (canvas.height / rect.height) };
+            }
+            canvas.addEventListener('mousedown', (e) => { isDrawing = true; const pos = getPos(e); lastX = pos.x; lastY = pos.y; });
+            canvas.addEventListener('mousemove', (e) => {
+                if (!isDrawing) return; e.preventDefault(); const pos = getPos(e);
+                ctx.beginPath(); ctx.moveTo(lastX, lastY); ctx.lineTo(pos.x, pos.y); ctx.stroke(); lastX = pos.x; lastY = pos.y;
+            });
+            window.addEventListener('mouseup', () => isDrawing = false);
+            canvas.addEventListener('touchstart', (e) => { isDrawing = true; const pos = getPos(e); lastX = pos.x; lastY = pos.y; }, { passive: false });
+            canvas.addEventListener('touchmove', (e) => {
+                if (!isDrawing) return; e.preventDefault(); const pos = getPos(e);
+                ctx.beginPath(); ctx.moveTo(lastX, lastY); ctx.lineTo(pos.x, pos.y); ctx.stroke(); lastX = pos.x; lastY = pos.y;
+            }, { passive: false });
+        }
+
+        window.clearSignature = () => { if (ctx && canvas) ctx.clearRect(0, 0, canvas.width, canvas.height); };
+
+        async function processFinal() {
+            if(canvas) { AppState.signatureImage = canvas.toDataURL(); }
+
+            let correct = 0;
+            quizData.forEach((q, i) => { if(AppState.answers[i] === q.correctAnswer) correct++; });
+            AppState.score = correct * 10;
+            const passed = AppState.score >= 80;
+
+            document.getElementById('app-container').innerHTML = `<div class="text-center relative z-10"><p class="animate-pulse font-bold text-huachipato-blue">Sincronizando registro y descargando copia PDF...</p></div>`;
+
+            // Mapeo detallado del formulario para la base de datos cloud
+            const detalleFormulario = quizData.map((q, i) => {
+                return {
+                    pregunta: q.question,
+                    seleccion: q.options[AppState.answers[i]] || 'Sin Respuesta',
+                    resultado: AppState.answers[i] === q.correctAnswer ? 'CORRECTO' : 'INCORRECTO'
+                };
+            });
+
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            doc.setFillColor(0, 51, 160); doc.rect(0, 0, 210, 40, 'F');
+            doc.setTextColor(255, 255, 255); doc.setFontSize(18); doc.setFont("helvetica", "bold");
+            doc.text("REGISTRO DE INDUCCIÓN Y ACREDITACIÓN", 105, 25, { align: 'center' });
+            doc.setTextColor(0, 51, 160); doc.setFontSize(13); doc.text("1. DATOS DEL TRABAJADOR", 20, 55);
+            doc.strokeStyle = '#e3000f'; doc.lineWidth = 0.5; doc.line(20, 58, 190, 58);
+            doc.setTextColor(0, 0, 0); doc.setFontSize(11); doc.setFont("helvetica", "normal");
+            doc.text(`Nombre Completo: ${AppState.user.nombre}`, 20, 68);
+            doc.text(`RUT de Identidad: ${AppState.user.rut}`, 20, 76);
+            doc.text(`Empresa: ${AppState.user.empresa}`, 20, 84);
+            doc.text(`Fecha y Hora de Emisión: ${new Date().toLocaleString()}`, 20, 92);
+            doc.setFont("helvetica", "bold");
+            if(passed) { doc.setTextColor(0, 128, 0); doc.text(`Puntaje: ${AppState.score}% - APROBADO`, 20, 103); } 
+            else { doc.setTextColor(227, 0, 15); doc.text(`Puntaje: ${AppState.score}% - REPROBADO`, 20, 103); }
+
+            if(AppState.signatureImage) { doc.addImage(AppState.signatureImage, 'PNG', 75, 130, 60, 30); }
+            doc.text(AppState.user.nombre, 105, 170, { align: 'center' });
+
+            const pdfBase64 = doc.output('datauristring');
+            doc.save(`Acreditacion_${AppState.user.rut.replace(/[^0-9kK]/g, '')}.pdf`);
+
+            if (GOOGLE_SCRIPT_URL !== "https://script.google.com/macros/s/AKfycbxnueP-fkstg1aIAw7IdscUgSusTynyqG5rqgPX5BeZb-hRY71ExVW_Wz1kn5_R3arq/exec") {
+                try {
+                    await fetch(GOOGLE_SCRIPT_URL, {
+                        method: 'POST',
+                        mode: 'no-cors', 
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            fecha: new Date().toLocaleString(),
+                            nombre: AppState.user.nombre,
+                            rut: AppState.user.rut,
+                            empresa: AppState.user.empresa,
+                            score: AppState.score,
+                            estado: passed ? 'APROBADO' : 'REPROBADO',
+                            respuestas: detalleFormulario,
+                            pdf_base64: pdfBase64
+                        })
+                    });
+                    showToast("¡Guardado exitoso!");
+                } catch (error) {
+                    showToast("Error de conexión al guardar en la nube.");
+                }
+            } else {
+                console.log("Datos de respaldo locales (Script URL no configurada todavía)");
+            }
+
+            renderResults(passed);
+        }
+
+        function renderResults(passed) {
+            document.getElementById('app-container').innerHTML = `
+                <div class="w-full max-w-md bg-white rounded-xl shadow-xl p-8 text-center border-t-8 ${passed ? 'border-green-500' : 'border-huachipato-red'} fade-in relative z-10">
+                    <h2 class="text-3xl font-bold mb-4">${passed ? '¡Acreditado!' : 'No Acreditado'}</h2>
+                    <p class="text-xl mb-4">Puntaje Obtenido: <span class="font-bold">${AppState.score}%</span></p>
+                    <p class="text-sm text-gray-500 mb-8">La inducción ha concluido. El registro se procesó en la base de datos central.</p>
+                    <button onclick="location.reload()" class="w-full bg-huachipato-dark text-white py-3 rounded-lg font-bold hover:bg-huachipato-blue transition">Volver al Inicio</button>
+                </div>`;
+        }
+
+        function showAdminLoginModal() { document.getElementById('admin-modal').classList.remove('hidden'); }
+        function closeAdminModal() { document.getElementById('admin-modal').classList.add('hidden'); }
+
+        // Funciones para controlar el Modal Detalle
+        function closeDetailModal() { document.getElementById('detail-modal').classList.add('hidden'); }
+
+        async function loginAdmin() {
+            const u = document.getElementById('admin-user').value.trim();
+            const p = document.getElementById('admin-pass').value.trim();
+
+            if (u === "adminprh" && p === "prh1234") {
+                AppState.adminMode = true;
+                closeAdminModal();
+                document.getElementById('btn-admin-view').classList.add('hidden');
+                document.getElementById('btn-logout-view').classList.remove('hidden');
+                
+                document.getElementById('app-container').innerHTML = `<div class="text-center relative z-10"><p class="text-huachipato-blue font-bold animate-pulse">Descargando registros en tiempo real...</p></div>`;
+                
+                if (GOOGLE_SCRIPT_URL !== "https://script.google.com/macros/s/AKfycbxnueP-fkstg1aIAw7IdscUgSusTynyqG5rqgPX5BeZb-hRY71ExVW_Wz1kn5_R3arq/exec") {
+                    try {
+                        const response = await fetch(GOOGLE_SCRIPT_URL);
+                        const result = await response.json();
+                        if(result.status === "success") {
+                            AppState.cachedRecords = result.data;
+                        }
+                    } catch (e) {
+                        showToast("Error al leer desde la API de Google Sheets.");
+                    }
+                }
+                renderAdminPanel(AppState.cachedRecords);
+            } else {
+                alert("Usuario o contraseña incorrectos.");
+            }
+        }
+
+        function logoutAdmin() {
+            AppState.adminMode = false;
+            document.getElementById('btn-admin-view').classList.remove('hidden');
+            document.getElementById('btn-logout-view').classList.add('hidden');
+            renderLogin();
+        }
+
+        window.filterRecords = function() {
+            const queryRut = document.getElementById('search-rut').value.toLowerCase().replace(/[^0-9kK]/g, '');
+            const queryEmpresa = document.getElementById('search-empresa').value.toLowerCase().trim();
+            
+            const invertedRecords = [...AppState.cachedRecords].reverse();
+            
+            const filtered = invertedRecords.filter(item => {
+                const cleanRut = (item.rut || '').toLowerCase().replace(/[^0-9kK]/g, '');
+                const itemEmpresa = (item.empresa || '').toLowerCase();
+                
+                const matchesRut = cleanRut.includes(queryRut);
+                const matchesEmpresa = itemEmpresa.includes(queryEmpresa);
+                
+                return matchesRut && matchesEmpresa;
+            });
+            
+            renderTableRows(filtered);
+        };
+
+        window.exportToExcel = function() {
+            const queryRut = document.getElementById('search-rut').value.toLowerCase().replace(/[^0-9kK]/g, '');
+            const queryEmpresa = document.getElementById('search-empresa').value.toLowerCase().trim();
+            
+            const invertedRecords = [...AppState.cachedRecords].reverse();
+            const dataToExport = invertedRecords.filter(item => {
+                const cleanRut = (item.rut || '').toLowerCase().replace(/[^0-9kK]/g, '');
+                const itemEmpresa = (item.empresa || '').toLowerCase();
+                return cleanRut.includes(queryRut) && itemEmpresa.includes(queryEmpresa);
+            });
+
+            if(dataToExport.length === 0) {
+                return alert("No hay datos en la tabla para exportar.");
+            }
+
+            const rowsExcel = dataToExport.map(item => ({
+                "Fecha / Hora": item.fecha,
+                "Nombre Completo": item.nombre,
+                "RUT": item.rut,
+                "Empresa": item.empresa || "No Registrada",
+                "Puntaje (%)": item.score,
+                "Estado": item.estado
+            }));
+
+            const worksheet = XLSX.utils.json_to_sheet(rowsExcel);
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, "Acreditaciones");
+
+            const maxProps = [{wch: 22}, {wch: 35}, {wch: 15}, {wch: 25}, {wch: 12}, {wch: 15}];
+            worksheet['!cols'] = maxProps;
+
+            XLSX.writeFile(workbook, `Acreditaciones_Huachipato_${new Date().toISOString().slice(0,10)}.xlsx`);
+        };
+
+        function renderAdminPanel(rows) {
+            document.getElementById('app-container').innerHTML = `
+                <div class="w-full max-w-6xl bg-white rounded-xl shadow-xl p-6 fade-in relative z-10">
+                    <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-6 border-b pb-4 gap-4">
+                        <div>
+                            <h2 class="text-2xl font-bold text-huachipato-dark">Panel de Control - Cloud</h2>
+                            <p class="text-xs text-gray-500">Sincronizado directamente con tu planilla en línea</p>
+                        </div>
+                        <div class="flex flex-col sm:flex-row gap-2 w-full lg:w-auto items-stretch sm:items-center">
+                            <input type="text" id="search-rut" oninput="filterRecords()" placeholder="Buscar por RUT..." class="w-full sm:w-48 p-2 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-huachipato-blue" />
+                            <input type="text" id="search-empresa" oninput="filterRecords()" placeholder="Buscar por Empresa..." class="w-full sm:w-48 p-2 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-huachipato-blue" />
+                            <button onclick="exportToExcel()" class="bg-green-700 text-white font-bold text-xs px-4 py-2.5 rounded-lg hover:bg-green-800 transition flex items-center justify-center gap-2">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                                Descargar Excel
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-sm border-collapse">
+                            <thead>
+                                <tr class="bg-gray-100 border-b">
+                                    <th class="p-3 font-semibold">Fecha</th>
+                                    <th class="p-3 font-semibold">Nombre Completo</th>
+                                    <th class="p-3 font-semibold">RUT</th>
+                                    <th class="p-3 font-semibold">Empresa</th>
+                                    <th class="p-3 font-semibold text-center">Nota</th>
+                                    <th class="p-3 font-semibold text-center">Estado</th>
+                                    <th class="p-3 font-semibold text-center">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="admin-table-body">
+                            </tbody>
+                        </table>
+                    </div>
+                </div>`;
+            
+            filterRecords();
+        }
+
+        function renderTableRows(rows) {
+            const tbody = document.getElementById('admin-table-body');
+            if(!tbody) return;
+
+            if(rows.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" class="p-4 text-center text-gray-400">No se detectan filas que coincidan con la búsqueda.</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = rows.map((item) => {
+                const originalIdx = AppState.cachedRecords.findIndex(r => r === item);
+
+                return `
+                    <tr class="border-b hover:bg-gray-50 transition">
+                        <td class="p-3 whitespace-nowrap">${item.fecha}</td>
+                        <td class="p-3 font-medium text-gray-900">${item.nombre}</td>
+                        <td class="p-3">${item.rut}</td>
+                        <td class="p-3">${item.empresa || '<span class="text-gray-400 italic">No registrada</span>'}</td>
+                        <td class="p-3 text-center font-bold">${item.score}%</td>
+                        <td class="p-3 text-center">
+                            <span class="px-2 py-1 rounded-full text-xs font-bold ${item.estado === 'APROBADO' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}">
+                                ${item.estado}
+                            </span>
+                        </td>
+                        <td class="p-3 flex justify-center gap-2">
+                            <button onclick="verDetalleCloud(${originalIdx})" class="bg-gray-200 text-gray-700 px-3 py-1 rounded text-xs font-medium hover:bg-gray-300">Ver Formulario</button>
+                            <button onclick="descargarPdfCloud(${originalIdx})" class="bg-huachipato-blue text-white px-3 py-1 rounded text-xs font-medium hover:bg-huachipato-dark">Recuperar PDF</button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        // FUNCIÓN MEJORADA: Ahora levanta un contenedor estructurado e interactivo con las 10 respuestas exactas
+        window.verDetalleCloud = function(index) {
+            const item = AppState.cachedRecords[index];
+            if (!item) return;
+
+            document.getElementById('detail-modal-title').textContent = `Detalle del Formulario: ${item.nombre}`;
+            document.getElementById('detail-modal-subtitle').textContent = `Empresa: ${item.empresa || 'No Registrada'} | Puntaje: ${item.score}% (${item.estado})`;
+
+            const bodyContainer = document.getElementById('detail-modal-body');
+            bodyContainer.innerHTML = ''; // Limpiar contenido anterior
+
+            if (item.respuestas && Array.isArray(item.respuestas)) {
+                item.respuestas.forEach((r, i) => {
+                    const isCorrect = r.resultado === 'CORRECTO';
+                    const card = document.createElement('div');
+                    card.className = `p-4 rounded-lg border ${isCorrect ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'}`;
+                    
+                    card.innerHTML = `
+                        <p class="font-semibold text-gray-800">${i + 1}. ${r.pregunta}</p>
+                        <div class="mt-2 flex flex-col sm:flex-row sm:items-center justify-between gap-1 text-xs">
+                            <p class="text-gray-600">Respuesta del usuario: <span class="font-bold text-gray-900">${r.seleccion}</span></p>
+                            <span class="font-bold px-2 py-0.5 rounded ${isCorrect ? 'bg-green-200 text-green-800' : 'bg-red-200 text-red-800'}">
+                                ${r.resultado}
+                            </span>
+                        </div>
+                    `;
+                    bodyContainer.appendChild(card);
+                });
+            } else {
+                bodyContainer.innerHTML = `<p class="text-center text-gray-400 italic py-4">No se encontraron los registros estructurados de las 10 preguntas en la celda.</p>`;
+            }
+
+            document.getElementById('detail-modal').classList.remove('hidden');
+        };
+
+        window.descargarPdfCloud = function(index) {
+            const item = AppState.cachedRecords[index];
+            if(item.pdf_base64 && item.pdf_base64.startsWith("data:")) {
+                const link = document.createElement('a');
+                link.href = item.pdf_base64;
+                link.download = `Copia_Acreditacion_${item.rut}.pdf`;
+                link.click();
+            } else {
+                alert("El registro de texto del PDF no está disponible completo en la celda o tiene formato incorrecto.");
+            }
+        };
+
+        window.onload = renderLogin;
+  </script>
 </body>
 </html>
