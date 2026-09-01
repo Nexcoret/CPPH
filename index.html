@@ -11,7 +11,6 @@
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
   <script>
     tailwind.config = {
@@ -85,12 +84,9 @@
   </div>
 
   <script>
-        // ================= CONFIGURACIÓN DE TU BASE DE DATOS SUPABASE =================
-        const SUPABASE_URL = "TU_PROJECT_URL_AQUI";        // Ej: https://xxxxxxxx.supabase.co
-        const SUPABASE_ANON_KEY = "TU_ANON_PUBLIC_KEY_AQUI";
-        const ADMIN_CLAVE = "prh1234"; // Debe coincidir con la clave dentro de get_registros_admin() en Supabase
-        const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-        // =============================================================================
+        // ================= CONFIGURACIÓN DE TU BASE DE DATOS CLOUD =================
+        const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwwTshxwKhg4s8a0ACTTxJQFC7xQIZKLmbvb995T_X3xFr8r4QNwKGqIsiHFj7GMSvpFg/exec";
+        // =========================================================================
 
         const quizData = [
             { id: 1, question: "¿Cuál es el EPP básico y obligatorio para transitar por la planta?", options: ["Solo casco y lentes.", "Casco, lentes, zapatos de seguridad, chaleco y protección auditiva.", "Ropa estándar.", "Guantes y mascarilla."], correctAnswer: 1 },
@@ -282,57 +278,32 @@
             if(AppState.signatureImage) { doc.addImage(AppState.signatureImage, 'PNG', 75, 120, 60, 30); }
             doc.text(AppState.user.nombre, 105, 160, { align: 'center' });
 
-            const pdfBlob = doc.output('blob');
+            const pdfBase64 = doc.output('datauristring');
             doc.save(`Acreditacion_${AppState.user.rut.replace(/[^0-9kK]/g, '')}.pdf`);
 
-            // ENVÍO DE DATOS A SUPABASE
-            if (SUPABASE_URL !== "TU_PROJECT_URL_AQUI") {
+            // ENVÍO DE DATOS A GOOGLE SHEETS
+            if (GOOGLE_SCRIPT_URL !== "TU_URL_DE_GOOGLE_APPS_SCRIPT_AQUI") {
                 try {
-                    const rutLimpio = AppState.user.rut.replace(/[^0-9kK]/g, '');
-                    const stamp = Date.now();
-
-                    // 1) Subir firma (PNG) al bucket 'firmas'
-                    let firma_url = null;
-                    if (AppState.signatureImage) {
-                        const firmaBlob = await (await fetch(AppState.signatureImage)).blob();
-                        const firmaPath = `${rutLimpio}_${stamp}.png`;
-                        const { error: errFirma } = await supabaseClient.storage
-                            .from('firmas')
-                            .upload(firmaPath, firmaBlob, { contentType: 'image/png' });
-                        if (!errFirma) {
-                            firma_url = supabaseClient.storage.from('firmas').getPublicUrl(firmaPath).data.publicUrl;
-                        }
-                    }
-
-                    // 2) Subir PDF al bucket 'pdfs-acreditacion'
-                    let pdf_url = null;
-                    const pdfPath = `${rutLimpio}_${stamp}.pdf`;
-                    const { error: errPdf } = await supabaseClient.storage
-                        .from('pdfs-acreditacion')
-                        .upload(pdfPath, pdfBlob, { contentType: 'application/pdf' });
-                    if (!errPdf) {
-                        pdf_url = supabaseClient.storage.from('pdfs-acreditacion').getPublicUrl(pdfPath).data.publicUrl;
-                    }
-
-                    // 3) Insertar el registro en la tabla 'acreditaciones'
-                    const { error: errInsert } = await supabaseClient.from('acreditaciones').insert({
-                        nombre: AppState.user.nombre,
-                        rut: AppState.user.rut,
-                        score: AppState.score,
-                        estado: passed ? 'APROBADO' : 'REPROBADO',
-                        respuestas: detalleFormulario,
-                        firma_url,
-                        pdf_url
+                    await fetch(GOOGLE_SCRIPT_URL, {
+                        method: 'POST',
+                        mode: 'no-cors', // Evita problemas de políticas CORS cruzadas con Google
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            fecha: new Date().toLocaleString(),
+                            nombre: AppState.user.nombre,
+                            rut: AppState.user.rut,
+                            score: AppState.score,
+                            estado: passed ? 'APROBADO' : 'REPROBADO',
+                            respuestas: detalleFormulario,
+                            pdf_base64: pdfBase64
+                        })
                     });
-
-                    if (errInsert) throw errInsert;
-                    showToast("¡Guardado exitoso en Supabase!");
+                    showToast("¡Guardado exitoso en Google Sheets cloud!");
                 } catch (error) {
-                    console.error(error);
                     showToast("Error de conexión al guardar en la nube.");
                 }
             } else {
-                console.log("Supabase no configurado todavía (SUPABASE_URL / SUPABASE_ANON_KEY).");
+                console.log("Datos de respaldo locales (Script URL no configurada todavía)");
             }
 
             renderResults(passed);
@@ -362,16 +333,17 @@
                 document.getElementById('btn-admin-view').classList.add('hidden');
                 document.getElementById('btn-logout-view').classList.remove('hidden');
                 
-                document.getElementById('app-container').innerHTML = `<div class="text-center"><p class="text-huachipato-blue font-bold animate-pulse">Descargando registros en tiempo real desde Supabase...</p></div>`;
-
-                if (SUPABASE_URL !== "TU_PROJECT_URL_AQUI") {
+                document.getElementById('app-container').innerHTML = `<div class="text-center"><p class="text-huachipato-blue font-bold animate-pulse">Descargando registros en tiempo real desde Google Sheets...</p></div>`;
+                
+                if (GOOGLE_SCRIPT_URL !== "TU_URL_DE_GOOGLE_APPS_SCRIPT_AQUI") {
                     try {
-                        const { data, error } = await supabaseClient.rpc('get_registros_admin', { p_clave: ADMIN_CLAVE });
-                        if (error) throw error;
-                        AppState.cachedRecords = data || [];
+                        const response = await fetch(GOOGLE_SCRIPT_URL);
+                        const result = await response.json();
+                        if(result.status === "success") {
+                            AppState.cachedRecords = result.data;
+                        }
                     } catch (e) {
-                        console.error(e);
-                        showToast("Error al leer desde Supabase.");
+                        showToast("Error al leer desde la API de Google Sheets.");
                     }
                 }
                 renderAdminPanel(AppState.cachedRecords);
@@ -392,8 +364,8 @@
                 <div class="w-full max-w-6xl bg-white rounded-xl shadow-xl p-6 fade-in">
                     <div class="flex justify-between items-center mb-6 border-b pb-4">
                         <div>
-                            <h2 class="text-2xl font-bold text-huachipato-dark">Panel de Control - Supabase</h2>
-                            <p class="text-xs text-gray-500">Sincronizado directamente con la base de datos en la nube</p>
+                            <h2 class="text-2xl font-bold text-huachipato-dark">Panel de Control - Google Sheets Cloud</h2>
+                            <p class="text-xs text-gray-500">Sincronizado directamente con tu planilla en línea</p>
                         </div>
                     </div>
                     
@@ -413,7 +385,7 @@
                                 ${rows.length === 0 ? '<tr><td colspan="6" class="p-4 text-center text-gray-400">No se detectan filas completadas en el Sheet.</td></tr>' : ''}
                                 ${rows.map((item, idx) => `
                                     <tr class="border-b hover:bg-gray-50 transition">
-                                        <td class="p-3 whitespace-nowrap">${new Date(item.created_at).toLocaleString()}</td>
+                                        <td class="p-3 whitespace-nowrap">${item.fecha}</td>
                                         <td class="p-3 font-medium text-gray-900">${item.nombre}</td>
                                         <td class="p-3">${item.rut}</td>
                                         <td class="p-3 text-center font-bold">${item.score}%</td>
@@ -445,14 +417,13 @@
 
         window.descargarPdfCloud = function(index) {
             const item = AppState.cachedRecords[index];
-            if(item.pdf_url) {
+            if(item.pdf_base64 && item.pdf_base64.startsWith("data:")) {
                 const link = document.createElement('a');
-                link.href = item.pdf_url;
-                link.target = '_blank';
+                link.href = item.pdf_base64;
                 link.download = `Copia_Acreditacion_${item.rut}.pdf`;
                 link.click();
             } else {
-                alert("Este registro no tiene un PDF asociado en Supabase Storage.");
+                alert("El registro de texto del PDF no está disponible completo en la celda o tiene formato incorrecto.");
             }
         };
 
